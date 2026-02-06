@@ -28,16 +28,21 @@
 
 ## 30-Second Quickstart
 
+**1. Get a free API key** → **<https://dashboard.nutrient.io/sign_up/?product=processor>**
+
+**2. Install & configure:**
+
 ```bash
-# 1. Install the skill (works with 40+ agents)
+# Install the skill (works with 40+ agents)
 npx skills add PSPDFKit-labs/nutrient-agent-skill
 
-# 2. Set your API key (free at https://dashboard.nutrient.io/sign_up/?product=processor)
+# Set your API key
 export NUTRIENT_API_KEY="pdf_live_..."
-
-# 3. Ask your agent
-> "Extract the text from invoice.pdf"
 ```
+
+**3. Ask your agent:**
+
+> *"Extract the text from invoice.pdf"*
 
 That's it. Your agent now has full document processing capabilities — no MCP setup required.
 
