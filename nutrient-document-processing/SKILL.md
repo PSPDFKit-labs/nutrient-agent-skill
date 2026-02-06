@@ -7,15 +7,12 @@ description: >-
   fill PDF forms, or check API credit usage. Activates on keywords: PDF, document, convert, extract,
   OCR, redact, watermark, sign, merge, compress, form fill, document processing.
 license: Apache-2.0
-compatibility: >-
-  Requires Node.js 18+ and an internet connection. Works with Claude Code, Codex CLI, Gemini CLI,
-  OpenCode, Cursor, Windsurf, GitHub Copilot, Amp, or any Agent Skills-compatible product.
-  Alternatively, use curl for direct API access without Node.js.
 metadata:
   author: nutrient-sdk
   version: "1.0"
   homepage: "https://www.nutrient.io/api/"
   repository: "https://github.com/PSPDFKit-labs/nutrient-agent-skill"
+  compatibility: "Requires Node.js 18+ and internet. Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Amp, or any Agent Skills-compatible product."
 ---
 
 # Nutrient Document Processing
