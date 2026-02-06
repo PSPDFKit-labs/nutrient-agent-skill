@@ -81,4 +81,4 @@ echo -e "  ${DIM}text has been irreversibly deleted.${RESET}"
 echo
 
 # Hold the final frame
-sleep 3
+sleep 5

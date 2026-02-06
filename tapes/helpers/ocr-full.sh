@@ -84,4 +84,4 @@ echo -e "  ${GREEN}📄 Created:${RESET} ${BOLD}${WHITE}scanned-contract-ocr.pdf
 echo -e "  ${GREEN}📝 Created:${RESET} ${BOLD}${WHITE}contract.txt${RESET} ${DIM}(plain text, 28 KB)${RESET}"
 echo
 
-sleep 3
+sleep 5

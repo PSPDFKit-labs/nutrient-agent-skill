@@ -84,4 +84,4 @@ echo
 echo -e "  ${GREEN}📄 Created:${RESET} ${BOLD}${WHITE}employee-onboarding-signed.pdf${RESET} ${DIM}(342 KB)${RESET}"
 echo
 
-sleep 3
+sleep 5
