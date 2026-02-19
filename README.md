@@ -33,11 +33,15 @@
 **2. Install & configure:**
 
 ```bash
-# Install the skill (works with 40+ agents)
+# Claude Code (marketplace — recommended)
+/plugin marketplace add PSPDFKit-labs/nutrient-agent-skill
+/plugin install nutrient-document-processor-api@nutrient-agent-skill
+
+# Or install via npx skills (works with 40+ agents)
 npx skills add PSPDFKit-labs/nutrient-agent-skill
 
 # Set your API key
-export NUTRIENT_API_KEY="pdf_live_..."
+export NUTRIENT_API_KEY="nutr_sk_..."
 ```
 
 **3. Ask your agent:**
@@ -136,9 +140,25 @@ patient-records.pdf (contains PII)
 
 ---
 
+## Requirements
+
+- Python 3.10+ with [uv](https://docs.astral.sh/uv/)
+- A [Nutrient API key](https://dashboard.nutrient.io/sign_up/?product=processor)
+
+---
+
 ## Installation
 
-### Using `npx skills` (Recommended)
+### Claude Code Marketplace (Recommended)
+
+```
+/plugin marketplace add PSPDFKit-labs/nutrient-agent-skill
+/plugin install nutrient-document-processor-api@nutrient-agent-skill
+```
+
+After installation, Claude Code will automatically load the skill in all future sessions.
+
+### Using `npx skills`
 
 ```bash
 # Install to all detected agents
@@ -151,9 +171,19 @@ npx skills add PSPDFKit-labs/nutrient-agent-skill -a claude-code -a codex -a cur
 npx skills add PSPDFKit-labs/nutrient-agent-skill -g
 ```
 
+### OpenAI Codex CLI
+
+Codex scans skills from `~/.codex/skills/` (user-wide) and `.agents/skills/` (project-wide). Symlink the plugin directory so it stays up to date with `git pull`:
+
+```bash
+git clone https://github.com/PSPDFKit-labs/nutrient-agent-skill.git ~/nutrient-agent-skill
+ln -s ~/nutrient-agent-skill/plugins/nutrient-document-processor-api \
+  ~/.codex/skills/nutrient-document-processor-api
+```
+
 ### Manual Installation
 
-Copy the `nutrient-document-processing/` folder to your agent's skills directory:
+Copy the `plugins/nutrient-document-processor-api/` folder to your agent's skills directory:
 
 | Agent | Project Path | Global Path |
 |-------|-------------|-------------|
@@ -172,7 +202,7 @@ Example for Claude Code:
 
 ```bash
 git clone https://github.com/PSPDFKit-labs/nutrient-agent-skill.git
-cp -r nutrient-agent-skill/nutrient-document-processing ~/.claude/skills/
+cp -r nutrient-agent-skill/plugins/nutrient-document-processor-api ~/.claude/skills/
 ```
 
 ---
@@ -196,7 +226,7 @@ Add to your MCP config (e.g., `claude_desktop_config.json`):
       "command": "npx",
       "args": ["-y", "@nutrient-sdk/dws-mcp-server"],
       "env": {
-        "NUTRIENT_DWS_API_KEY": "YOUR_API_KEY",
+        "NUTRIENT_API_KEY": "YOUR_API_KEY",
         "SANDBOX_PATH": "/path/to/working/directory"
       }
     }
@@ -221,18 +251,28 @@ openclaw plugins install @nutrient-sdk/nutrient-openclaw
 ## Skill Structure
 
 ```
-nutrient-document-processing/
-├── SKILL.md              # Main instructions (loaded by agents)
-├── references/
-│   └── REFERENCE.md      # Full API reference (loaded on demand)
-├── LICENSE               # Apache-2.0
-└── README.md
+.claude-plugin/
+  marketplace.json                  Claude Code marketplace catalog
+plugins/
+  nutrient-document-processor-api/  Nutrient DWS API plugin
+    .claude-plugin/
+      plugin.json                   Plugin manifest
+    SKILL.md                        Skill definition (Codex + generic agents)
+    skills/
+      nutrient-document-processor-api/
+        SKILL.md                    Skill definition (Claude Code auto-discovery)
+    agents/
+      openai.yaml                   OpenAI Codex interface metadata
+    scripts/                        Ready-to-run Python task scripts
+    assets/templates/               Custom workflow template
+    references/                     API method mapping and pipeline guides
 ```
 
 ## Documentation
 
-- **[SKILL.md](nutrient-document-processing/SKILL.md)** — Agent instructions with setup and operation examples
-- **[REFERENCE.md](nutrient-document-processing/references/REFERENCE.md)** — Complete API reference with all endpoints, parameters, and error codes
+- **[SKILL.md](plugins/nutrient-document-processor-api/SKILL.md)** — Agent instructions with setup and operation examples
+- **[Script Catalog](plugins/nutrient-document-processor-api/references/script-catalog.md)** — Complete script matrix and method mapping
+- **[Custom Pipeline Guidelines](plugins/nutrient-document-processor-api/references/custom-pipeline-guidelines.md)** — Patterns for building multi-step document workflows
 - **[API Playground](https://dashboard.nutrient.io/processor-api/playground/)** — Interactive API testing
 - **[Official API Docs](https://www.nutrient.io/guides/dws-processor/)** — Nutrient documentation
 
@@ -242,4 +282,4 @@ Built by [Nutrient](https://www.nutrient.io/) (formerly PSPDFKit) — document S
 
 ## License
 
-[Apache-2.0](nutrient-document-processing/LICENSE)
+[Apache-2.0](LICENSE)
