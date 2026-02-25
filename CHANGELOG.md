@@ -13,7 +13,7 @@ Migration from curl-based skill to Python script-based plugin architecture.
 - Claude Code marketplace support (`.claude-plugin/marketplace.json`)
 - OpenAI Codex CLI support (`agents/openai.yaml` + symlink installation)
 - Custom workflow template for multi-step document pipelines
-- Script catalog and custom pipeline guidelines in `references/`
+- Expanded in-skill documentation and a full test guide for script workflows
 
 **Requirements:**
 - Python 3.10+ with [uv](https://docs.astral.sh/uv/)

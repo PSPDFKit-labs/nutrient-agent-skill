@@ -32,8 +32,8 @@ PDF=~/work/pspdf/PSPDFKit-worktree/assets/A.pdf
 
 **Working directory**
 
-Run all commands from the plugin root — the directory that contains `scripts/`, `assets/`,
-and `references/`. Relative paths in the commands below assume that location.
+Run all commands from the plugin root — the directory that contains `scripts/` and `assets/`.
+Relative paths in the commands below assume that location.
 
 **Output directory**
 
