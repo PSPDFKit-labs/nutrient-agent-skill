@@ -9,7 +9,7 @@
 
 ```bash
 export NUTRIENT_API_KEY="nutr_sk_..."
-PDF=~/work/pspdf/PSPDFKit-worktree/assets/A.pdf
+PDF=/path/to/your/input.pdf
 OUT=/tmp/ndp-test
 mkdir -p "$OUT"
 ```
