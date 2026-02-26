@@ -29,32 +29,40 @@ Export the API key before running scripts:
 export NUTRIENT_API_KEY="nutr_sk_..."
 ```
 
-Run scripts from the repository root:
+Scripts live inside this skill's own directory. Before running any script, locate the skill directory and change into it or use the full path.
+
+Find the skill directory:
 
 ```bash
-uv run scripts/<script>.py --help
+SKILL_DIR=$(find ~/.claude/skills .claude/skills -maxdepth 2 -name "SKILL.md" -path "*/nutrient-document-processing/*" -exec dirname {} \; 2>/dev/null | head -1)
+```
+
+Then run scripts using the full path:
+
+```bash
+uv run "$SKILL_DIR/scripts/<script>.py" --help
 ```
 
 Page ranges use `start:end` (0-based, end-exclusive). Negative indices count from the end. Use comma-separated ranges like `0:2,3:5,-2:-1`.
 
 ## Single-Operation Scripts
 
-- Convert format: `uv run scripts/convert.py --input doc.pdf --format docx --out doc.docx`
-- Merge files: `uv run scripts/merge.py --inputs a.pdf,b.pdf --out merged.pdf`
-- Split by ranges: `uv run scripts/split.py --input doc.pdf --ranges 0:2,2: --out-dir out --prefix part`
-- OCR: `uv run scripts/ocr.py --input scan.pdf --languages english --out scan-ocr.pdf`
-- Rotate pages: `uv run scripts/rotate.py --input doc.pdf --angle 90 --out rotated.pdf`
-- Optimize: `uv run scripts/optimize.py --input doc.pdf --out optimized.pdf`
-- Extract text: `uv run scripts/extract-text.py --input doc.pdf --out text.json`
-- Extract tables: `uv run scripts/extract-table.py --input doc.pdf --out tables.json`
-- Extract key-value pairs: `uv run scripts/extract-key-value-pairs.py --input doc.pdf --out kvp.json`
-- Add text watermark: `uv run scripts/watermark-text.py --input doc.pdf --text CONFIDENTIAL --out watermarked.pdf`
-- AI redact: `uv run scripts/redact-ai.py --input doc.pdf --criteria "Remove all SSNs" --mode apply --out redacted.pdf`
-- Sign: `uv run scripts/sign.py --input doc.pdf --out signed.pdf`
-- Password protect: `uv run scripts/password-protect.py --input doc.pdf --user-password upass --owner-password opass --out protected.pdf`
-- Add pages: `uv run scripts/add-pages.py --input doc.pdf --count 2 --out with-pages.pdf`
-- Delete pages: `uv run scripts/delete-pages.py --input doc.pdf --pages 0,2,-1 --out trimmed.pdf`
-- Duplicate/reorder pages: `uv run scripts/duplicate-pages.py --input doc.pdf --pages 2,0,1,1 --out reordered.pdf`
+- Convert format: `uv run "$SKILL_DIR/scripts/convert.py" --input doc.pdf --format docx --out doc.docx`
+- Merge files: `uv run "$SKILL_DIR/scripts/merge.py" --inputs a.pdf,b.pdf --out merged.pdf`
+- Split by ranges: `uv run "$SKILL_DIR/scripts/split.py" --input doc.pdf --ranges 0:2,2: --out-dir out --prefix part`
+- OCR: `uv run "$SKILL_DIR/scripts/ocr.py" --input scan.pdf --languages english --out scan-ocr.pdf`
+- Rotate pages: `uv run "$SKILL_DIR/scripts/rotate.py" --input doc.pdf --angle 90 --out rotated.pdf`
+- Optimize: `uv run "$SKILL_DIR/scripts/optimize.py" --input doc.pdf --out optimized.pdf`
+- Extract text: `uv run "$SKILL_DIR/scripts/extract-text.py" --input doc.pdf --out text.json`
+- Extract tables: `uv run "$SKILL_DIR/scripts/extract-table.py" --input doc.pdf --out tables.json`
+- Extract key-value pairs: `uv run "$SKILL_DIR/scripts/extract-key-value-pairs.py" --input doc.pdf --out kvp.json`
+- Add text watermark: `uv run "$SKILL_DIR/scripts/watermark-text.py" --input doc.pdf --text CONFIDENTIAL --out watermarked.pdf`
+- AI redact: `uv run "$SKILL_DIR/scripts/redact-ai.py" --input doc.pdf --criteria "Remove all SSNs" --mode apply --out redacted.pdf`
+- Sign: `uv run "$SKILL_DIR/scripts/sign.py" --input doc.pdf --out signed.pdf`
+- Password protect: `uv run "$SKILL_DIR/scripts/password-protect.py" --input doc.pdf --user-password upass --owner-password opass --out protected.pdf`
+- Add pages: `uv run "$SKILL_DIR/scripts/add-pages.py" --input doc.pdf --count 2 --out with-pages.pdf`
+- Delete pages: `uv run "$SKILL_DIR/scripts/delete-pages.py" --input doc.pdf --pages 0,2,-1 --out trimmed.pdf`
+- Duplicate/reorder pages: `uv run "$SKILL_DIR/scripts/duplicate-pages.py" --input doc.pdf --pages 2,0,1,1 --out reordered.pdf`
 
 ## Multi-Step Workflow Rule
 
@@ -62,7 +70,7 @@ Do not add new committed pipeline scripts under `scripts/`.
 
 When the user asks for multiple operations in one run:
 
-1. Copy `assets/templates/custom-workflow-template.py` to a temporary location (for example `/tmp/ndp-workflow-<task>.py`).
+1. Copy `"$SKILL_DIR/assets/templates/custom-workflow-template.py"` to a temporary location (for example `/tmp/ndp-workflow-<task>.py`).
 2. Implement the combined workflow in that temporary script.
 3. Run it with `uv run /tmp/ndp-workflow-<task>.py ...`.
 4. Return generated output files.
