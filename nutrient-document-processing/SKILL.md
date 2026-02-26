@@ -1,9 +1,27 @@
 ---
 name: nutrient-document-processing
-description: Execute single-operation document-processing tasks with the nutrient-dws Python client via uv run scripts. Use for convert, merge, split, OCR, extract text/tables/key-value pairs, watermark, redact, sign, optimize, protect, or reorder pages. For multi-step workflows, generate a temporary script at runtime from the template and run it.
+description: >-
+  Process documents with the Nutrient DWS API. Use this skill when the user wants to convert documents
+  (PDF, DOCX, XLSX, PPTX, HTML, images), extract text or tables from PDFs, OCR scanned documents,
+  redact sensitive information (PII, SSN, emails, credit cards), add watermarks, digitally sign PDFs,
+  fill PDF forms, or check API credit usage. Activates on keywords: PDF, document, convert, extract,
+  OCR, redact, watermark, sign, merge, compress, form fill, document processing.
+license: Apache-2.0
+metadata:
+  author: nutrient-sdk
+  version: "1.0"
+  homepage: "https://www.nutrient.io/api/"
+  repository: "https://github.com/PSPDFKit-labs/nutrient-agent-skill"
+  compatibility: "Requires Node.js 18+ and internet. Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Amp, or any Agent Skills-compatible product."
 ---
 
 # Nutrient Document Processing
+
+Process, convert, extract, redact, sign, and manipulate documents using the [Nutrient DWS Processor API](https://www.nutrient.io/api/).
+
+## Setup
+
+You need a Nutrient DWS API key. Get one free at <https://dashboard.nutrient.io/sign_up/?product=processor>.
 
 Export the API key before running scripts:
 
@@ -52,7 +70,6 @@ When the user asks for multiple operations in one run:
 
 ## Rules
 
-- Keep committed scripts single-operation only.
 - Fail fast when required arguments are missing.
 - `sign` only accepts local file paths (not URLs).
 - Write outputs to explicit paths and print created files.
