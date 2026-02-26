@@ -5,10 +5,11 @@
 - Python 3.10+
 - `uv` on `PATH`
 - `NUTRIENT_API_KEY` set
-- Local PDF input
+- **Multi-page PDF input** (3+ pages recommended for comprehensive testing)
 
 ```bash
 export NUTRIENT_API_KEY="nutr_sk_..."
+# NOTE: Use a multi-page PDF (3+ pages required for split.py and delete-pages.py)
 PDF=/path/to/your/input.pdf
 OUT=/tmp/ndp-test
 mkdir -p "$OUT"
@@ -77,6 +78,8 @@ rm -f "$TMP_SCRIPT"
 ## 4. Pass criteria
 
 - All `--help` commands succeed.
-- Single-operation scripts produce output files.
+- Single-operation scripts produce output files (using a multi-page PDF).
 - Multi-step workflows are run from temporary scripts only.
 - No committed pipeline scripts exist in `nutrient-document-processing/scripts/`.
+
+**Note:** Single-page PDFs will cause failures in `split.py` and `delete-pages.py`. Use a multi-page PDF (3+ pages) for complete test coverage.

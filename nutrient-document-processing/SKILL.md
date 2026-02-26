@@ -37,6 +37,14 @@ cd <directory containing this SKILL.md> && uv run scripts/<script>.py --help
 
 Page ranges use `start:end` (0-based, end-exclusive). Negative indices count from the end. Use comma-separated ranges like `0:2,3:5,-2:-1`.
 
+## PDF Requirements
+
+Some operations require specific document characteristics:
+
+- **split.py**: Requires multi-page PDFs (2+ pages). Cannot extract a range from a single-page document.
+- **delete-pages.py**: Must retain at least one page. Cannot delete all pages in a document.
+- **sign.py**: Only accepts local file paths (not URLs).
+
 ## Single-Operation Scripts
 
 - Convert format: `uv run scripts/convert.py --input doc.pdf --format docx --out doc.docx`
@@ -71,7 +79,6 @@ When the user asks for multiple operations in one run:
 ## Rules
 
 - Fail fast when required arguments are missing.
-- `sign` only accepts local file paths (not URLs).
 - Write outputs to explicit paths and print created files.
 - Do not log secrets.
 - All client methods are async and should run via `asyncio.run(main())`.
