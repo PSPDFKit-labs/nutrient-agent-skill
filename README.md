@@ -2,7 +2,6 @@
 
 <p align="center">
   <a href="https://www.nutrient.io/api/"><img src="https://img.shields.io/badge/Nutrient-DWS%20API-blue" alt="Nutrient DWS API"></a>
-  <a href="https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server"><img src="https://img.shields.io/npm/v/@nutrient-sdk/dws-mcp-server" alt="npm version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
   <a href="https://agentskills.io"><img src="https://img.shields.io/badge/Agent%20Skills-compatible-purple" alt="Agent Skills"></a>
 </p>
@@ -20,8 +19,7 @@
   <a href="#30-second-quickstart">Quickstart</a> •
   <a href="#real-world-workflows">Workflows</a> •
   <a href="#features">Features</a> •
-  <a href="#supported-agents">40+ Agents</a> •
-  <a href="#alternative-integrations">MCP &amp; OpenClaw</a>
+  <a href="#supported-agents">40+ Agents</a>
 </p>
 
 ---
@@ -44,7 +42,15 @@ export NUTRIENT_API_KEY="pdf_live_..."
 
 > *"Extract the text from invoice.pdf"*
 
-That's it. Your agent now has full document processing capabilities — no MCP setup required.
+That's it. Your agent now has full document processing capabilities.
+
+---
+
+## Requirements
+
+- Python 3.10+
+- `uv` installed: <https://docs.astral.sh/uv/>
+- Nutrient API key
 
 ---
 
@@ -177,62 +183,33 @@ cp -r nutrient-agent-skill/nutrient-document-processing ~/.claude/skills/
 
 ---
 
-## Alternative Integrations
-
-### MCP Server (For agents with MCP support)
-
-The **Nutrient DWS MCP Server** provides all operations as native agent tools with file I/O handling and sandboxing.
-
-```bash
-npx @nutrient-sdk/dws-mcp-server
-```
-
-Add to your MCP config (e.g., `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "nutrient-dws": {
-      "command": "npx",
-      "args": ["-y", "@nutrient-sdk/dws-mcp-server"],
-      "env": {
-        "NUTRIENT_DWS_API_KEY": "YOUR_API_KEY",
-        "SANDBOX_PATH": "/path/to/working/directory"
-      }
-    }
-  }
-}
-```
-
-📦 [npm](https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server) · [GitHub](https://github.com/PSPDFKit/nutrient-dws-mcp-server)
-
-### OpenClaw Plugin
-
-For [OpenClaw](https://openclaw.com) users:
-
-```bash
-openclaw plugins install @nutrient-sdk/nutrient-openclaw
-```
-
-📦 [npm](https://www.npmjs.com/package/@nutrient-sdk/nutrient-openclaw)
-
----
-
 ## Skill Structure
 
 ```
 nutrient-document-processing/
-├── SKILL.md              # Main instructions (loaded by agents)
-├── references/
-│   └── REFERENCE.md      # Full API reference (loaded on demand)
-├── LICENSE               # Apache-2.0
-└── README.md
+├── SKILL.md                          # Main instructions (loaded by agents)
+├── scripts/
+│   ├── *.py                          # Single-operation scripts
+│   └── lib/common.py                 # Shared utilities
+├── assets/
+│   └── templates/
+│       └── custom-workflow-template.py  # Runtime pipeline template
+├── tests/
+│   └── testing-guide.md
+└── LICENSE                           # Apache-2.0
 ```
+
+### Script Model
+
+- `scripts/*.py` are single-operation scripts only.
+- Multi-step workflows are generated at runtime in a temporary script from `assets/templates/custom-workflow-template.py`.
+- Do not commit runtime pipeline scripts.
 
 ## Documentation
 
 - **[SKILL.md](nutrient-document-processing/SKILL.md)** — Agent instructions with setup and operation examples
-- **[REFERENCE.md](nutrient-document-processing/references/REFERENCE.md)** — Complete API reference with all endpoints, parameters, and error codes
+- **[Testing Guide](nutrient-document-processing/tests/testing-guide.md)** — Manual test procedures
+- **[Custom Workflow Template](nutrient-document-processing/assets/templates/custom-workflow-template.py)** — Runtime pipeline starting point
 - **[API Playground](https://dashboard.nutrient.io/processor-api/playground/)** — Interactive API testing
 - **[Official API Docs](https://www.nutrient.io/guides/dws-processor/)** — Nutrient documentation
 

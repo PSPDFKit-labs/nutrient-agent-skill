@@ -23,268 +23,63 @@ Process, convert, extract, redact, sign, and manipulate documents using the [Nut
 
 You need a Nutrient DWS API key. Get one free at <https://dashboard.nutrient.io/sign_up/?product=processor>.
 
-### Option 1: MCP Server (Recommended)
-
-If your agent supports MCP (Model Context Protocol), use the Nutrient DWS MCP Server. It provides all operations as native tools.
-
-**Configure your MCP client** (e.g., `claude_desktop_config.json` or `.mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "nutrient-dws": {
-      "command": "npx",
-      "args": ["-y", "@nutrient-sdk/dws-mcp-server"],
-      "env": {
-        "NUTRIENT_DWS_API_KEY": "YOUR_API_KEY",
-        "SANDBOX_PATH": "/path/to/working/directory"
-      }
-    }
-  }
-}
-```
-
-Then use the MCP tools directly (e.g., `convert_to_pdf`, `extract_text`, `redact`, etc.).
-
-### Option 2: Direct API (curl)
-
-For agents without MCP support, call the API directly:
+Export the API key before running scripts:
 
 ```bash
-export NUTRIENT_API_KEY="your_api_key_here"
+export NUTRIENT_API_KEY="nutr_sk_..."
 ```
 
-All requests go to `https://api.nutrient.io/build` as multipart POST with an `instructions` JSON field.
-
-## Operations
-
-### 1. Convert Documents
-
-Convert between PDF, DOCX, XLSX, PPTX, HTML, and image formats.
-
-**HTML to PDF:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "index.html=@index.html" \
-  -F 'instructions={"parts":[{"html":"index.html"}]}' \
-  -o output.pdf
-```
-
-**DOCX to PDF:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.docx=@document.docx" \
-  -F 'instructions={"parts":[{"file":"document.docx"}]}' \
-  -o output.pdf
-```
-
-**PDF to DOCX/XLSX/PPTX:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"output":{"type":"docx"}}' \
-  -o output.docx
-```
-
-**Image to PDF:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "image.jpg=@image.jpg" \
-  -F 'instructions={"parts":[{"file":"image.jpg"}]}' \
-  -o output.pdf
-```
-
-### 2. Extract Text and Data
-
-**Extract plain text:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"output":{"type":"text"}}' \
-  -o output.txt
-```
-
-**Extract tables (as JSON, CSV, or Excel):**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"output":{"type":"xlsx"}}' \
-  -o tables.xlsx
-```
-
-**Extract key-value pairs:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"extraction","strategy":"key-values"}]}' \
-  -o result.json
-```
-
-### 3. OCR Scanned Documents
-
-Apply OCR to scanned PDFs or images, producing searchable PDFs with selectable text.
+Scripts live in `scripts/` relative to this SKILL.md. Use the directory containing this SKILL.md as the working directory when running scripts:
 
 ```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "scanned.pdf=@scanned.pdf" \
-  -F 'instructions={"parts":[{"file":"scanned.pdf"}],"actions":[{"type":"ocr","language":"english"}]}' \
-  -o searchable.pdf
+cd <directory containing this SKILL.md> && uv run scripts/<script>.py --help
 ```
 
-Supported languages: `english`, `german`, `french`, `spanish`, `italian`, `portuguese`, `dutch`, `swedish`, `danish`, `norwegian`, `finnish`, `polish`, `czech`, `turkish`, `japanese`, `korean`, `chinese-simplified`, `chinese-traditional`, `arabic`, `hebrew`, `thai`, `hindi`, `russian`, and more.
+Page ranges use `start:end` (0-based, end-exclusive). Negative indices count from the end. Use comma-separated ranges like `0:2,3:5,-2:-1`.
 
-### 4. Redact Sensitive Information
+## PDF Requirements
 
-**Pattern-based redaction** (preset patterns):
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"redaction","strategy":"preset","preset":"social-security-number"}]}' \
-  -o redacted.pdf
-```
+Some operations require specific document characteristics:
 
-Available presets: `social-security-number`, `credit-card-number`, `email-address`, `north-american-phone-number`, `international-phone-number`, `date`, `url`, `ipv4`, `ipv6`, `mac-address`, `us-zip-code`, `vin`, `time`.
+- **split.py**: Requires multi-page PDFs (2+ pages). Cannot extract a range from a single-page document.
+- **delete-pages.py**: Must retain at least one page. Cannot delete all pages in a document.
+- **sign.py**: Only accepts local file paths (not URLs).
 
-**Regex-based redaction:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"redaction","strategy":"regex","regex":"\\b[A-Z]{2}\\d{6}\\b"}]}' \
-  -o redacted.pdf
-```
+## Single-Operation Scripts
 
-**AI-powered PII redaction:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"ai_redaction","criteria":"All personally identifiable information"}]}' \
-  -o redacted.pdf
-```
+- Convert format: `uv run scripts/convert.py --input doc.pdf --format docx --out doc.docx`
+- Merge files: `uv run scripts/merge.py --inputs a.pdf,b.pdf --out merged.pdf`
+- Split by ranges: `uv run scripts/split.py --input doc.pdf --ranges 0:2,2: --out-dir out --prefix part`
+- OCR: `uv run scripts/ocr.py --input scan.pdf --languages english --out scan-ocr.pdf`
+- Rotate pages: `uv run scripts/rotate.py --input doc.pdf --angle 90 --out rotated.pdf`
+- Optimize: `uv run scripts/optimize.py --input doc.pdf --out optimized.pdf`
+- Extract text: `uv run scripts/extract-text.py --input doc.pdf --out text.json`
+- Extract tables: `uv run scripts/extract-table.py --input doc.pdf --out tables.json`
+- Extract key-value pairs: `uv run scripts/extract-key-value-pairs.py --input doc.pdf --out kvp.json`
+- Add text watermark: `uv run scripts/watermark-text.py --input doc.pdf --text CONFIDENTIAL --out watermarked.pdf`
+- AI redact: `uv run scripts/redact-ai.py --input doc.pdf --criteria "Remove all SSNs" --mode apply --out redacted.pdf`
+- Sign: `uv run scripts/sign.py --input doc.pdf --out signed.pdf`
+- Password protect: `uv run scripts/password-protect.py --input doc.pdf --user-password upass --owner-password opass --out protected.pdf`
+- Add pages: `uv run scripts/add-pages.py --input doc.pdf --count 2 --out with-pages.pdf`
+- Delete pages: `uv run scripts/delete-pages.py --input doc.pdf --pages 0,2,-1 --out trimmed.pdf`
+- Duplicate/reorder pages: `uv run scripts/duplicate-pages.py --input doc.pdf --pages 2,0,1,1 --out reordered.pdf`
 
-The `criteria` field accepts natural language (e.g., "Names and phone numbers", "Protected health information", "Financial account numbers").
+## Multi-Step Workflow Rule
 
-### 5. Add Watermarks
+Do not add new committed pipeline scripts under `scripts/`.
 
-**Text watermark:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"watermark","text":"CONFIDENTIAL","fontSize":48,"fontColor":"#FF0000","opacity":0.5,"rotation":45,"width":"50%","height":"50%"}]}' \
-  -o watermarked.pdf
-```
+When the user asks for multiple operations in one run:
 
-**Image watermark:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F "logo.png=@logo.png" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"watermark","imagePath":"logo.png","width":"30%","height":"30%","opacity":0.3}]}' \
-  -o watermarked.pdf
-```
+1. Copy `assets/templates/custom-workflow-template.py` to a temporary location (for example `/tmp/ndp-workflow-<task>.py`).
+2. Implement the combined workflow in that temporary script.
+3. Run it with `uv run /tmp/ndp-workflow-<task>.py ...`.
+4. Return generated output files.
+5. Delete the temporary script unless the user explicitly asks to keep it.
 
-### 6. Digital Signatures
+## Rules
 
-**Sign a PDF with CMS signature:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"sign","signatureType":"cms","signerName":"John Doe","reason":"Approval","location":"New York"}]}' \
-  -o signed.pdf
-```
-
-**Sign with CAdES-B-LT (long-term validation):**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"sign","signatureType":"cades","cadesLevel":"b-lt","signerName":"Jane Smith"}]}' \
-  -o signed.pdf
-```
-
-### 7. Form Filling (Instant JSON)
-
-Fill PDF form fields using Instant JSON format:
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "form.pdf=@form.pdf" \
-  -F 'instructions={"parts":[{"file":"form.pdf"}],"actions":[{"type":"fillForm","fields":[{"name":"firstName","value":"John"},{"name":"lastName","value":"Doe"},{"name":"email","value":"john@example.com"}]}]}' \
-  -o filled.pdf
-```
-
-### 8. Merge and Split PDFs
-
-**Merge multiple PDFs:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "doc1.pdf=@doc1.pdf" \
-  -F "doc2.pdf=@doc2.pdf" \
-  -F 'instructions={"parts":[{"file":"doc1.pdf"},{"file":"doc2.pdf"}]}' \
-  -o merged.pdf
-```
-
-**Extract specific pages:**
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf","pages":{"start":0,"end":4}}]}' \
-  -o pages1-5.pdf
-```
-
-### 9. Render PDF Pages as Images
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F "document.pdf=@document.pdf" \
-  -F 'instructions={"parts":[{"file":"document.pdf","pages":{"start":0,"end":0}}],"output":{"type":"png","dpi":300}}' \
-  -o page1.png
-```
-
-### 10. Check Credits
-
-```bash
-curl -X GET https://api.nutrient.io/credits \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY"
-```
-
-## Best Practices
-
-1. **Use the MCP server** when your agent supports it — it handles file I/O, error handling, and sandboxing automatically.
-2. **Set `SANDBOX_PATH`** to restrict file access to a specific directory.
-3. **Check credit balance** before batch operations to avoid interruptions.
-4. **Use AI redaction** for complex PII detection; use preset/regex redaction for known patterns (faster, cheaper).
-5. **Chain operations** — the API supports multiple actions in a single call (e.g., OCR then redact).
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| 401 Unauthorized | Check your API key is valid and has credits |
-| 413 Payload Too Large | Files must be under 100 MB |
-| Slow AI redaction | AI analysis takes 60–120 seconds; this is normal |
-| OCR quality poor | Try a different language parameter or improve scan quality |
-| Missing text in extraction | Run OCR first on scanned documents |
-
-## More Information
-
-- [Full API reference](references/REFERENCE.md) — Detailed endpoints, parameters, and error codes
-- [API Playground](https://dashboard.nutrient.io/processor-api/playground/) — Interactive API testing
-- [API Documentation](https://www.nutrient.io/guides/dws-processor/) — Official guides
-- [MCP Server repo](https://github.com/PSPDFKit/nutrient-dws-mcp-server) — Source code and issues
+- Fail fast when required arguments are missing.
+- Write outputs to explicit paths and print created files.
+- Do not log secrets.
+- All client methods are async and should run via `asyncio.run(main())`.
+- If import fails, install dependency with `uv add nutrient-dws`.
