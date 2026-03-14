@@ -1,0 +1,52 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install YAML parser
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Validate repo structure
+        run: python tools/validate-repo.py
+
+      - name: Validate Codex metadata
+        run: |
+          python - <<'PY'
+          import pathlib
+          import yaml
+
+          path = pathlib.Path("nutrient-document-processing/agents/openai.yaml")
+          data = yaml.safe_load(path.read_text())
+          interface = data.get("interface", {})
+          required = ["display_name", "short_description", "default_prompt"]
+          missing = [key for key in required if key not in interface]
+          if missing:
+              raise SystemExit(f"openai.yaml missing interface keys: {missing}")
+          print("openai.yaml parsed successfully")
+          PY
+
+      - name: Compile Python scripts
+        run: |
+          python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py
+
+      - name: Smoke test script help
+        run: |
+          for script in nutrient-document-processing/scripts/*.py; do
+            python "$script" --help > /dev/null
+          done

@@ -2,13 +2,14 @@
 
 <p align="center">
   <a href="https://www.nutrient.io/api/"><img src="https://img.shields.io/badge/Nutrient-DWS%20API-blue" alt="Nutrient DWS API"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
+  <a href="https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server"><img src="https://img.shields.io/npm/v/@nutrient-sdk/dws-mcp-server" alt="npm version"></a>
+  <a href="nutrient-document-processing/LICENSE.txt"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
   <a href="https://agentskills.io"><img src="https://img.shields.io/badge/Agent%20Skills-compatible-purple" alt="Agent Skills"></a>
 </p>
 
 <p align="center">
   <strong>Give your AI agent PDF superpowers — in one command.</strong><br>
-  Convert, extract, OCR, redact, sign, and fill documents from any coding agent.
+  Generate, convert, extract, OCR, redact, sign, archive, and optimize documents from any coding agent.
 </p>
 
 <p align="center">
@@ -131,13 +132,17 @@ patient-records.pdf (contains PII)
 
 | Capability | Description | Example prompt |
 |------------|-------------|----------------|
+| ✨ **Generate** | Create PDFs from HTML templates, uploaded assets, or remote URLs | *"Generate a PDF proposal from this HTML template"* |
 | 📄 **Convert** | PDF ↔ DOCX/XLSX/PPTX, HTML → PDF, images → PDF | *"Convert report.docx to PDF"* |
+| 🧩 **Assemble** | Merge, split, reorder, rotate, and flatten PDF packets before delivery | *"Merge these PDFs, rotate the landscape pages, and keep only pages 1-5"* |
 | 📝 **Extract** | Text, tables, and key-value pairs from PDFs | *"Extract all tables from invoice.pdf as Excel"* |
 | 🔍 **OCR** | Multi-language OCR for scanned documents | *"OCR this German scan and extract the text"* |
 | 🔒 **Redact** | Pattern-based + AI-powered PII redaction | *"Redact all SSNs and emails from records.pdf"* |
 | 💧 **Watermark** | Text or image watermarks with full styling | *"Add a DRAFT watermark to proposal.pdf"* |
 | ✍️ **Sign** | CMS and CAdES digital signatures | *"Digitally sign contract.pdf"* |
 | 📋 **Fill Forms** | Programmatic PDF form filling | *"Fill the tax form with these values…"* |
+| 🗂️ **Compliance** | Convert PDFs for archival or accessibility targets like PDF/A and PDF/UA | *"Convert this PDF to PDF/A-2a"* |
+| ⚡ **Optimize** | Optimize and linearize PDFs for web delivery and download performance | *"Linearize this PDF for fast web viewing"* |
 | 📊 **Credits** | Monitor API usage and balance | *"How many API credits do I have left?"* |
 
 ---
@@ -188,15 +193,21 @@ cp -r nutrient-agent-skill/nutrient-document-processing ~/.claude/skills/
 ```
 nutrient-document-processing/
 ├── SKILL.md                          # Main instructions (loaded by agents)
+├── agents/
+│   └── openai.yaml                   # Optional Codex App metadata
+├── references/
+│   ├── REFERENCE.md                  # Reference index
+│   └── *.md                          # Focused cookbooks by workflow type
 ├── scripts/
 │   ├── *.py                          # Single-operation scripts
 │   └── lib/common.py                 # Shared utilities
 ├── assets/
+│   ├── nutrient.svg                  # Skill icon
 │   └── templates/
 │       └── custom-workflow-template.py  # Runtime pipeline template
 ├── tests/
 │   └── testing-guide.md
-└── LICENSE                           # Apache-2.0
+└── LICENSE.txt                       # Apache-2.0
 ```
 
 ### Script Model
@@ -204,12 +215,15 @@ nutrient-document-processing/
 - `scripts/*.py` are single-operation scripts only.
 - Multi-step workflows are generated at runtime in a temporary script from `assets/templates/custom-workflow-template.py`.
 - Do not commit runtime pipeline scripts.
+- Use `references/` for HTML/URL generation, compliance outputs, and other workflows that are easier to express as direct API payloads or temporary pipelines.
 
 ## Documentation
 
 - **[SKILL.md](nutrient-document-processing/SKILL.md)** — Agent instructions with setup and operation examples
+- **[Reference Index](nutrient-document-processing/references/REFERENCE.md)** — Modular cookbook for generation, conversion, extraction, security, compliance, and workflow sequencing
 - **[Testing Guide](nutrient-document-processing/tests/testing-guide.md)** — Manual test procedures
 - **[Custom Workflow Template](nutrient-document-processing/assets/templates/custom-workflow-template.py)** — Runtime pipeline starting point
+- **[Codex App Metadata](nutrient-document-processing/agents/openai.yaml)** — Optional manifest for Codex App packaging
 - **[API Playground](https://dashboard.nutrient.io/processor-api/playground/)** — Interactive API testing
 - **[Official API Docs](https://www.nutrient.io/guides/dws-processor/)** — Nutrient documentation
 
@@ -219,4 +233,4 @@ Built by [Nutrient](https://www.nutrient.io/) (formerly PSPDFKit) — document S
 
 ## License
 
-[Apache-2.0](nutrient-document-processing/LICENSE)
+[Apache-2.0](nutrient-document-processing/LICENSE.txt)
