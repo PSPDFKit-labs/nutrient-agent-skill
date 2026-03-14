@@ -3,13 +3,13 @@
 <p align="center">
   <a href="https://www.nutrient.io/api/"><img src="https://img.shields.io/badge/Nutrient-DWS%20API-blue" alt="Nutrient DWS API"></a>
   <a href="https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server"><img src="https://img.shields.io/npm/v/@nutrient-sdk/dws-mcp-server" alt="npm version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
+  <a href="nutrient-document-processing/LICENSE.txt"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
   <a href="https://agentskills.io"><img src="https://img.shields.io/badge/Agent%20Skills-compatible-purple" alt="Agent Skills"></a>
 </p>
 
 <p align="center">
   <strong>Give your AI agent PDF superpowers — in one command.</strong><br>
-  Convert, extract, OCR, redact, sign, and fill documents from any coding agent.
+  Generate, convert, extract, OCR, redact, sign, archive, and optimize documents from any coding agent.
 </p>
 
 <p align="center">
@@ -120,6 +120,7 @@ patient-records.pdf (contains PII)
 
 | Capability | Description | Example prompt |
 |------------|-------------|----------------|
+| ✨ **Generate** | Create PDFs from HTML templates, uploaded assets, or remote URLs | *"Generate a PDF proposal from this HTML template"* |
 | 📄 **Convert** | PDF ↔ DOCX/XLSX/PPTX, HTML → PDF, images → PDF | *"Convert report.docx to PDF"* |
 | 📝 **Extract** | Text, tables, and key-value pairs from PDFs | *"Extract all tables from invoice.pdf as Excel"* |
 | 🔍 **OCR** | Multi-language OCR for scanned documents | *"OCR this German scan and extract the text"* |
@@ -127,6 +128,8 @@ patient-records.pdf (contains PII)
 | 💧 **Watermark** | Text or image watermarks with full styling | *"Add a DRAFT watermark to proposal.pdf"* |
 | ✍️ **Sign** | CMS and CAdES digital signatures | *"Digitally sign contract.pdf"* |
 | 📋 **Fill Forms** | Programmatic PDF form filling | *"Fill the tax form with these values…"* |
+| 🗂️ **Compliance** | Convert PDFs for archival or accessibility targets like PDF/A and PDF/UA | *"Convert this PDF to PDF/A-2a"* |
+| ⚡ **Optimize** | Optimize and linearize PDFs for web delivery and download performance | *"Linearize this PDF for fast web viewing"* |
 | 📊 **Credits** | Monitor API usage and balance | *"How many API credits do I have left?"* |
 
 ---
