@@ -1,18 +1,37 @@
 ---
 name: nutrient-document-processing
-description: Use when tasks involve generating PDFs from HTML or URLs, converting Office/images/PDFs, assembling or splitting PDFs, OCRing and extracting content, redacting, watermarking, signing, filling, or producing compliance outputs like PDF/A, PDF/UA, and linearized PDFs with Nutrient DWS. Triggers include convert to PDF, OCR this scan, extract tables, merge these PDFs, redact PII, sign this PDF, make this PDF/A, or linearize for web delivery. Prefer the Nutrient MCP server when it is already configured, otherwise call the API directly.
+description: >-
+  Process documents with Nutrient DWS. Use when the user wants to generate PDFs from HTML or URLs,
+  convert Office/images/PDFs, assemble or split packets, OCR scans, extract text/tables/key-value
+  pairs, redact PII, watermark, sign, fill forms, optimize PDFs, or produce compliance outputs like
+  PDF/A or PDF/UA. Triggers include convert to PDF, merge these PDFs, OCR this scan, extract tables,
+  redact PII, sign this PDF, make this PDF/A, or linearize for web delivery.
+license: Apache-2.0
 metadata:
-  short-description: Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents
+  author: nutrient-sdk
+  version: "1.0"
+  homepage: "https://www.nutrient.io/api/"
+  repository: "https://github.com/PSPDFKit-labs/nutrient-agent-skill"
+  compatibility: "Requires Python 3.10+, uv, and internet. Works with Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Windsurf, GitHub Copilot, Amp, or any Agent Skills-compatible product."
+  short-description: "Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents"
 ---
 
 # Nutrient Document Processing
 
 Use Nutrient DWS for managed document workflows where fidelity, compliance, or multi-step processing matters more than local-tool convenience.
 
-## Setup assumptions
+## Setup
+- Get a Nutrient DWS API key at <https://dashboard.nutrient.io/sign_up/?product=processor>.
 - Direct API calls use `Authorization: Bearer $NUTRIENT_API_KEY`.
+  ```bash
+  export NUTRIENT_API_KEY="nutr_sk_..."
+  ```
 - MCP setups commonly use `@nutrient-sdk/dws-mcp-server` with `NUTRIENT_DWS_API_KEY`.
-- Open `references/request-basics.md` first when authentication or payload shape is the blocker.
+- Scripts live in `scripts/` relative to this SKILL.md. Use the directory containing this SKILL.md as the working directory:
+  ```bash
+  cd <directory containing this SKILL.md> && uv run scripts/<script>.py --help
+  ```
+- Page ranges use `start:end` with 0-based indexes and end-exclusive semantics. Negative indexes count from the end.
 
 ## When to use
 - Generate PDFs from HTML templates, uploaded assets, or remote URLs.
@@ -23,38 +42,49 @@ Use Nutrient DWS for managed document workflows where fidelity, compliance, or m
 - Check credits before large, batch, or AI-heavy runs.
 
 ## Tool preference
-1. Prefer the Nutrient MCP server when it is already configured. It handles file I/O and reduces multipart-request boilerplate.
-2. Fall back to direct API calls when MCP is unavailable or the workflow is easier to express as an explicit payload.
-3. Use local PDF utilities only for lightweight inspection. Use Nutrient when output fidelity or compliance matters.
+1. Prefer `scripts/*.py` for covered single-operation workflows.
+2. Use `assets/templates/custom-workflow-template.py` for multi-step jobs that should still run through the Python client.
+3. Use the modular `references/` docs and direct API payloads for capabilities that do not yet have a dedicated helper script, especially HTML/URL generation and compliance tuning.
+4. Use local PDF utilities only for lightweight inspection. Use Nutrient when output fidelity or compliance matters.
 
-## Request model
-- Most workflows use `POST https://api.nutrient.io/build`.
-- Use multipart requests when uploading local files. Use JSON requests when all inputs are remote URLs.
-- `parts` describes source files, HTML inputs, remote URLs, page ranges, and passwords.
-- `actions` applies ordered transformations such as OCR, redaction, watermarking, signing, flattening, or rotation.
-- `output` selects the final format and delivery options such as `pdf`, `text`, `docx`, `png`, `pdfa`, `pdfua`, or optimized PDF output.
-- Dedicated endpoints also exist for some tools such as PDF/UA auto-tagging, but `/build` is the default mental model.
+## Single-operation scripts
+- `convert.py` -> convert between `pdf`, `pdfa`, `pdfua`, `docx`, `xlsx`, `pptx`, `png`, `jpeg`, `webp`, `html`, and `markdown`
+- `merge.py` -> merge multiple files into one PDF
+- `split.py` -> split one PDF into multiple PDFs by page ranges
+- `add-pages.py` -> append blank pages
+- `delete-pages.py` -> remove specific pages
+- `duplicate-pages.py` -> reorder or duplicate pages into a new PDF
+- `rotate.py` -> rotate selected pages
+- `ocr.py` -> OCR scanned PDFs or images
+- `extract-text.py` -> extract text to JSON
+- `extract-table.py` -> extract tables
+- `extract-key-value-pairs.py` -> extract key-value pairs
+- `watermark-text.py` -> apply a text watermark
+- `redact-ai.py` -> detect and apply AI-powered redactions
+- `sign.py` -> digitally sign a local PDF
+- `password-protect.py` -> write encrypted output PDFs
+- `optimize.py` -> apply optimization and linearization-style options via JSON
 
-Minimal direct-call template:
+## Multi-Step Workflow Rule
+Do not add new committed pipeline scripts under `scripts/`.
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}]}' \
-  -o result.pdf
-```
+When the user asks for multiple operations in one run:
+1. Copy `assets/templates/custom-workflow-template.py` to a temporary location such as `/tmp/ndp-workflow-<task>.py`.
+2. Implement the combined workflow in that temporary script.
+3. Run it with `uv run /tmp/ndp-workflow-<task>.py ...`.
+4. Return generated output files.
+5. Delete the temporary script unless the user explicitly asks to keep it.
 
-## Workflow
-1. Identify the source type and the required final artifact.
-2. Decide whether the job is generation, conversion, extraction, security/compliance, or a chained workflow.
-3. Express the full pipeline in one payload when the ordering is clear and the artifact should stay in-memory on the server.
-4. Save outputs with stable suffixes such as `-ocr`, `-redacted`, `-pdfa`, `-pdfua`, or `-linearized`.
+## PDF Requirements
+- `split.py` requires a multi-page PDF and cannot extract ranges from a single-page document.
+- `delete-pages.py` must retain at least one page and cannot delete the entire document.
+- `sign.py` only accepts local file paths for the main PDF.
 
 ## Decision rules
+- Prefer a helper script when one already covers the requested operation cleanly.
 - If you control the source markup, prefer HTML generation over browser print workflows.
 - Use remote `file.url` inputs when the source already lives at a stable URL and you want to avoid local uploads.
-- Use `output.type` for conversion and finalization targets. Use `actions` for transformations.
+- Use `output.type` for conversion and finalization targets. Use `actions` for transformations when building direct API payloads.
 - OCR before text extraction, key-value extraction, or semantic redaction on scans.
 - Prefer preset or regex redaction when the target is explicit. Use AI redaction only for contextual or natural-language requests.
 - Use the PDF manipulation reference for merge, split, rotate, flatten, and page-range workflows instead of inferring those payloads from conversion examples.
@@ -68,6 +98,7 @@ curl -X POST https://api.nutrient.io/build \
 - Do not flatten forms or annotations until the user confirms the artifact no longer needs to stay editable.
 - Do not sign, archive, or linearize intermediate working files. Keep those as final-delivery steps.
 - Do not promise PDF/A or PDF/UA compliance without a validation step when the requirement is contractual.
+- Do not commit temporary workflow scripts under `scripts/`.
 
 ## Reference map
 Read only what you need:
@@ -80,9 +111,9 @@ Read only what you need:
 - `references/compliance-and-optimization.md` -> PDF/A, PDF/UA, optimization, and linearization
 - `references/workflow-recipes.md` -> end-to-end sequencing patterns for common business document workflows
 
-## References
-- [Reference index](references/REFERENCE.md)
-- [API docs](https://www.nutrient.io/api/documentation/)
-- [Processor API overview](https://www.nutrient.io/api/processor-api/)
-- [API playground](https://dashboard.nutrient.io/processor-api/playground/)
-- [MCP server](https://github.com/PSPDFKit/nutrient-dws-mcp-server)
+## Rules
+- Fail fast when required arguments are missing.
+- Write outputs to explicit paths and print created files.
+- Do not log secrets.
+- All client methods are async and should run via `asyncio.run(main())`.
+- If import fails, install dependency with `uv add nutrient-dws`.

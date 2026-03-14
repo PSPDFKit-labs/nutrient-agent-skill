@@ -20,26 +20,38 @@
   <a href="#30-second-quickstart">Quickstart</a> •
   <a href="#real-world-workflows">Workflows</a> •
   <a href="#features">Features</a> •
-  <a href="#supported-agents">40+ Agents</a> •
-  <a href="#alternative-integrations">MCP &amp; OpenClaw</a>
+  <a href="#supported-agents">40+ Agents</a>
 </p>
 
 ---
 
 ## 30-Second Quickstart
 
+**1. Get a free API key** → **<https://dashboard.nutrient.io/sign_up/?product=processor>**
+
+**2. Install & configure:**
+
 ```bash
-# 1. Install the skill (works with 40+ agents)
+# Install the skill (works with 40+ agents)
 npx skills add PSPDFKit-labs/nutrient-agent-skill
 
-# 2. Set your API key (free at https://dashboard.nutrient.io/sign_up/?product=processor)
+# Set your API key
 export NUTRIENT_API_KEY="pdf_live_..."
-
-# 3. Ask your agent
-> "Extract the text from invoice.pdf"
 ```
 
-That's it. Your agent now has full document processing capabilities — no MCP setup required.
+**3. Ask your agent:**
+
+> *"Extract the text from invoice.pdf"*
+
+That's it. Your agent now has full document processing capabilities.
+
+---
+
+## Requirements
+
+- Python 3.10+
+- `uv` installed: <https://docs.astral.sh/uv/>
+- Nutrient API key
 
 ---
 
@@ -176,62 +188,42 @@ cp -r nutrient-agent-skill/nutrient-document-processing ~/.claude/skills/
 
 ---
 
-## Alternative Integrations
-
-### MCP Server (For agents with MCP support)
-
-The **Nutrient DWS MCP Server** provides all operations as native agent tools with file I/O handling and sandboxing.
-
-```bash
-npx @nutrient-sdk/dws-mcp-server
-```
-
-Add to your MCP config (e.g., `claude_desktop_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "nutrient-dws": {
-      "command": "npx",
-      "args": ["-y", "@nutrient-sdk/dws-mcp-server"],
-      "env": {
-        "NUTRIENT_DWS_API_KEY": "YOUR_API_KEY",
-        "SANDBOX_PATH": "/path/to/working/directory"
-      }
-    }
-  }
-}
-```
-
-📦 [npm](https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server) · [GitHub](https://github.com/PSPDFKit/nutrient-dws-mcp-server)
-
-### OpenClaw Plugin
-
-For [OpenClaw](https://openclaw.com) users:
-
-```bash
-openclaw plugins install @nutrient-sdk/nutrient-openclaw
-```
-
-📦 [npm](https://www.npmjs.com/package/@nutrient-sdk/nutrient-openclaw)
-
----
-
 ## Skill Structure
 
 ```
 nutrient-document-processing/
-├── SKILL.md              # Main instructions (loaded by agents)
+├── SKILL.md                          # Main instructions (loaded by agents)
+├── agents/
+│   └── openai.yaml                   # Optional Codex App metadata
 ├── references/
-│   └── REFERENCE.md      # Full API reference (loaded on demand)
-├── LICENSE               # Apache-2.0
-└── README.md
+│   ├── REFERENCE.md                  # Reference index
+│   └── *.md                          # Focused cookbooks by workflow type
+├── scripts/
+│   ├── *.py                          # Single-operation scripts
+│   └── lib/common.py                 # Shared utilities
+├── assets/
+│   ├── nutrient.svg                  # Skill icon
+│   └── templates/
+│       └── custom-workflow-template.py  # Runtime pipeline template
+├── tests/
+│   └── testing-guide.md
+└── LICENSE.txt                       # Apache-2.0
 ```
+
+### Script Model
+
+- `scripts/*.py` are single-operation scripts only.
+- Multi-step workflows are generated at runtime in a temporary script from `assets/templates/custom-workflow-template.py`.
+- Do not commit runtime pipeline scripts.
+- Use `references/` for HTML/URL generation, compliance outputs, and other workflows that are easier to express as direct API payloads or temporary pipelines.
 
 ## Documentation
 
 - **[SKILL.md](nutrient-document-processing/SKILL.md)** — Agent instructions with setup and operation examples
-- **[REFERENCE.md](nutrient-document-processing/references/REFERENCE.md)** — Complete API reference with all endpoints, parameters, and error codes
+- **[Reference Index](nutrient-document-processing/references/REFERENCE.md)** — Modular cookbook for generation, conversion, extraction, security, compliance, and workflow sequencing
+- **[Testing Guide](nutrient-document-processing/tests/testing-guide.md)** — Manual test procedures
+- **[Custom Workflow Template](nutrient-document-processing/assets/templates/custom-workflow-template.py)** — Runtime pipeline starting point
+- **[Codex App Metadata](nutrient-document-processing/agents/openai.yaml)** — Optional manifest for Codex App packaging
 - **[API Playground](https://dashboard.nutrient.io/processor-api/playground/)** — Interactive API testing
 - **[Official API Docs](https://www.nutrient.io/guides/dws-processor/)** — Nutrient documentation
 
@@ -241,4 +233,4 @@ Built by [Nutrient](https://www.nutrient.io/) (formerly PSPDFKit) — document S
 
 ## License
 
-[Apache-2.0](nutrient-document-processing/LICENSE)
+[Apache-2.0](nutrient-document-processing/LICENSE.txt)
