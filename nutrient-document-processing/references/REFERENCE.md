@@ -10,6 +10,9 @@ Use this folder as a modular cookbook. Keep `SKILL.md` loaded as the router and 
 - [generation-and-conversion.md](generation-and-conversion.md)
   PDF generation from HTML or URLs, Office/image conversion, and output-format selection.
 
+- [pdf-manipulation.md](pdf-manipulation.md)
+  Merge, split, reorder, rotate, and flatten PDF workflows.
+
 - [extraction-and-ocr.md](extraction-and-ocr.md)
   OCR, text extraction, table extraction, and key-value workflows.
 

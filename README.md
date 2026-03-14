@@ -122,6 +122,7 @@ patient-records.pdf (contains PII)
 |------------|-------------|----------------|
 | ✨ **Generate** | Create PDFs from HTML templates, uploaded assets, or remote URLs | *"Generate a PDF proposal from this HTML template"* |
 | 📄 **Convert** | PDF ↔ DOCX/XLSX/PPTX, HTML → PDF, images → PDF | *"Convert report.docx to PDF"* |
+| 🧩 **Assemble** | Merge, split, reorder, rotate, and flatten PDF packets before delivery | *"Merge these PDFs, rotate the landscape pages, and keep only pages 1-5"* |
 | 📝 **Extract** | Text, tables, and key-value pairs from PDFs | *"Extract all tables from invoice.pdf as Excel"* |
 | 🔍 **OCR** | Multi-language OCR for scanned documents | *"OCR this German scan and extract the text"* |
 | 🔒 **Redact** | Pattern-based + AI-powered PII redaction | *"Redact all SSNs and emails from records.pdf"* |

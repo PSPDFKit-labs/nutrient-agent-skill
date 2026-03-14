@@ -76,6 +76,20 @@ Recommended sequence:
 
 Reasoning: linearization is a delivery concern, not an authoring concern.
 
+## 7. Packet assembly before signing
+
+Goal: merge multiple PDFs, fix page orientation, and produce a final packet for signing or distribution.
+
+Recommended sequence:
+
+1. Merge or reorder the required parts
+2. Extract or omit page ranges as needed
+3. Optional page rotation
+4. Optional flattening
+5. Watermark, sign, optimize, or linearize last
+
+Reasoning: assembly and page normalization are still content mutations. Final-artifact operations should happen only after the packet shape is stable.
+
 ## Recipe heuristics
 
 - Keep OCR early.

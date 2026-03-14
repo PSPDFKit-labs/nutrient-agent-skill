@@ -1,13 +1,18 @@
 ---
 name: nutrient-document-processing
-description: Use when tasks involve generating PDFs from HTML or URLs, converting Office/images/PDFs, OCRing and extracting content, redacting, watermarking, signing, filling, merging, or producing compliance outputs like PDF/A, PDF/UA, and linearized PDFs with Nutrient DWS; prefer the Nutrient MCP server when it is already configured, otherwise call the API directly.
+description: Use when tasks involve generating PDFs from HTML or URLs, converting Office/images/PDFs, assembling or splitting PDFs, OCRing and extracting content, redacting, watermarking, signing, filling, or producing compliance outputs like PDF/A, PDF/UA, and linearized PDFs with Nutrient DWS. Triggers include convert to PDF, OCR this scan, extract tables, merge these PDFs, redact PII, sign this PDF, make this PDF/A, or linearize for web delivery. Prefer the Nutrient MCP server when it is already configured, otherwise call the API directly.
 metadata:
-  short-description: Generate, convert, OCR, redact, sign, archive, and optimize documents
+  short-description: Generate, convert, assemble, OCR, redact, sign, archive, and optimize documents
 ---
 
 # Nutrient Document Processing
 
 Use Nutrient DWS for managed document workflows where fidelity, compliance, or multi-step processing matters more than local-tool convenience.
+
+## Setup assumptions
+- Direct API calls use `Authorization: Bearer $NUTRIENT_API_KEY`.
+- MCP setups commonly use `@nutrient-sdk/dws-mcp-server` with `NUTRIENT_DWS_API_KEY`.
+- Open `references/request-basics.md` first when authentication or payload shape is the blocker.
 
 ## When to use
 - Generate PDFs from HTML templates, uploaded assets, or remote URLs.
@@ -52,16 +57,24 @@ curl -X POST https://api.nutrient.io/build \
 - Use `output.type` for conversion and finalization targets. Use `actions` for transformations.
 - OCR before text extraction, key-value extraction, or semantic redaction on scans.
 - Prefer preset or regex redaction when the target is explicit. Use AI redaction only for contextual or natural-language requests.
+- Use the PDF manipulation reference for merge, split, rotate, flatten, and page-range workflows instead of inferring those payloads from conversion examples.
 - Treat PDF/A and PDF/UA as compliance targets, not cosmetic export formats. Choose the target up front and validate final artifacts when requirements are contractual.
 - For PDF/UA, clean born-digital inputs and structured HTML usually tag better than rasterized or flattened source PDFs.
 - For delivery optimization, linearize or optimize unsigned output artifacts instead of mutating already signed files.
 - When the user asks for multiple steps, keep destructive or final steps late in the sequence. Use the workflow recipes when ordering is ambiguous.
+
+## Anti-patterns
+- Do not OCR born-digital PDFs just because the task mentions extraction. Extract first and OCR only if the text layer is missing.
+- Do not flatten forms or annotations until the user confirms the artifact no longer needs to stay editable.
+- Do not sign, archive, or linearize intermediate working files. Keep those as final-delivery steps.
+- Do not promise PDF/A or PDF/UA compliance without a validation step when the requirement is contractual.
 
 ## Reference map
 Read only what you need:
 
 - `references/request-basics.md` -> endpoint model, auth, multipart vs JSON, credits, limits, and errors
 - `references/generation-and-conversion.md` -> HTML/URL generation and format conversion
+- `references/pdf-manipulation.md` -> merge, split, page-range, rotate, and flatten workflows
 - `references/extraction-and-ocr.md` -> OCR, text extraction, tables, and key-value workflows
 - `references/security-signing-and-forms.md` -> redaction, watermarking, signatures, forms, and passwords
 - `references/compliance-and-optimization.md` -> PDF/A, PDF/UA, optimization, and linearization
