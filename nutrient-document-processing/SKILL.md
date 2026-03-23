@@ -117,3 +117,14 @@ Read only what you need:
 - Do not log secrets.
 - All client methods are async and should run via `asyncio.run(main())`.
 - If import fails, install dependency with `uv add nutrient-dws`.
+
+## Security Hardening Addendum
+
+- Prefer a pinned, preinstalled MCP server binary over runtime package fetches.
+  - Preferred: `npm i -g @nutrient-sdk/dws-mcp-server@<pinned-version>`
+  - Avoid unpinned runtime fetch in production paths.
+- Never store `NUTRIENT_DWS_API_KEY` in committed JSON config files.
+  - Use process env injection at runtime (shell/export, secrets manager, or host env).
+- Restrict file access with `SANDBOX_PATH` to the minimum required working directory.
+- Before enabling MCP mode in production, verify package provenance and lock version.
+
