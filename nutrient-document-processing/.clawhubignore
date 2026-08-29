@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+*.py[cod]
+tests/
+_meta.json

@@ -1,0 +1,65 @@
+{
+  "plan_id": "nutrient-agent-skill-clawhub-refresh-2026-08-29",
+  "summary": "Correct the current Nutrient document-processing skill against the live DWS contract, add offline contract tests and metered-run consent guidance, and prepare a provenance-backed replacement for the stale nutrient-document-processing-universal ClawHub listing without publishing it.",
+  "tasks": [
+    {
+      "id": "ND-T1",
+      "name": "Freeze current DWS contract and stale-listing delta",
+      "owner_role": "contract-architect",
+      "depends_on": [],
+      "write_scope": ["docs/swarm", "docs/clawhub-release"],
+      "acceptance_criteria": [
+        "Every direct API example is classified as current, replaced, or removed",
+        "The old ClawHub slug has an explicit redirect/deprecation plan",
+        "No paid DWS request is used for validation"
+      ],
+      "validation": ["git diff --check"]
+    },
+    {
+      "id": "ND-T2",
+      "name": "Correct skill routing, examples, consent, and package metadata",
+      "owner_role": "implementation-worker",
+      "depends_on": ["ND-T1"],
+      "write_scope": ["nutrient-document-processing", "README.md"],
+      "acceptance_criteria": [
+        "Extraction and redaction examples match current official DWS contracts",
+        "The package name, license, credentials, dependency setup, and paths are portable for ClawHub",
+        "Credit-consuming calls require operation and credit estimates plus action-time approval",
+        "Irreversible redaction and signing workflows include output verification"
+      ],
+      "validation": ["python tools/validate-repo.py", "python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py", "offline contract tests"]
+    },
+    {
+      "id": "ND-T3",
+      "name": "Add release provenance and replacement manifest",
+      "owner_role": "contract-architect",
+      "depends_on": ["ND-T2"],
+      "write_scope": [".github/workflows", "docs/clawhub-release", "CHANGELOG.md", "tools"],
+      "acceptance_criteria": [
+        "Release source is pinned to repository, commit, and skill path",
+        "Publishing and slug redirect actions require explicit manual dispatch inputs",
+        "The stale universal package cannot be accidentally republished"
+      ],
+      "validation": ["python tools/validate-repo.py", "release-manifest validation", "git diff --check"]
+    },
+    {
+      "id": "ND-T4",
+      "name": "Final critic and release gate",
+      "owner_role": "critic-reviewer",
+      "depends_on": ["ND-T3"],
+      "write_scope": [],
+      "acceptance_criteria": [
+        "All payload examples and helpers agree",
+        "All offline validations pass",
+        "No metered call or ClawHub mutation occurred"
+      ],
+      "validation": ["full repository validation", "package inspection", "git status --short"]
+    }
+  ],
+  "waves": [
+    {"id": "ND-W0", "task_ids": ["ND-T1"]},
+    {"id": "ND-W1", "task_ids": ["ND-T2"]},
+    {"id": "ND-W2", "task_ids": ["ND-T3"]},
+    {"id": "ND-W3", "task_ids": ["ND-T4"]}
+  ]
+}

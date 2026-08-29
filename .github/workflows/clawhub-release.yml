@@ -1,0 +1,201 @@
+name: ClawHub release provenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Validate only, preview with ClawHub dry-run, or publish after all gates
+        required: true
+        default: validate
+        type: choice
+        options:
+          - validate
+          - dry-run
+          - publish
+      expected_source_commit:
+        description: Full 40-character commit expected to be published (required for publish)
+        required: false
+        type: string
+      publish_confirmation:
+        description: Exact confirmation phrase recorded in the release manifest (required for publish)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clawhub-nutrient-document-processing
+  cancel-in-progress: false
+
+jobs:
+  validate-and-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact workflow commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pinned validation tools
+        run: |
+          python -m pip install --disable-pip-version-check pyyaml
+          npm install --global clawhub@0.23.3
+
+      - name: Verify source and CLI provenance
+        env:
+          EXPECTED_REPOSITORY: PSPDFKit-labs/nutrient-agent-skill
+          EXPECTED_CLAWHUB_VERSION: 0.23.3
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$(clawhub --cli-version)" = "$EXPECTED_CLAWHUB_VERSION"
+
+      - name: Run complete offline validation
+        run: |
+          set -euo pipefail
+          python tools/validate-repo.py
+          python tools/quick_validate.py nutrient-document-processing
+          python -m unittest discover -s tests -v
+          python -m unittest discover -s tools -p 'test_*.py' -v
+          python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py nutrient-document-processing/assets/templates/custom-workflow-template.py tools/*.py
+
+      - name: Render exact release manifest
+        run: |
+          python tools/release_manifest.py \
+            --commit "$GITHUB_SHA" \
+            --ref "$GITHUB_REF" \
+            --output "$RUNNER_TEMP/clawhub-release-manifest.json"
+
+      - name: Upload release provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: clawhub-release-provenance-${{ github.sha }}
+          path: ${{ runner.temp }}/clawhub-release-manifest.json
+          if-no-files-found: error
+
+      - name: Preview canonical skill publication
+        if: inputs.mode == 'dry-run' || inputs.mode == 'publish'
+        run: |
+          clawhub --no-input skill publish nutrient-document-processing \
+            --slug nutrient-document-processing \
+            --name "Nutrient Document Processing" \
+            --owner jdrhyne \
+            --version 2.0.0 \
+            --changelog "Correct DWS 3.1.0 contracts, product routing, paid-run consent, credential handling, and safe outputs." \
+            --tags latest \
+            --categories integrations,automation,knowledge \
+            --topics pdf,document-processing,ocr,redaction,document-conversion \
+            --source-repo PSPDFKit-labs/nutrient-agent-skill \
+            --source-commit "$GITHUB_SHA" \
+            --source-ref "$GITHUB_REF" \
+            --source-path nutrient-document-processing \
+            --dry-run \
+            --json
+
+  publish:
+    if: inputs.mode == 'publish'
+    needs: validate-and-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: clawhub-production
+    steps:
+      - name: Check out the exact workflow commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pinned ClawHub CLI
+        run: npm install --global clawhub@0.23.3
+
+      - name: Enforce human publication gates
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ inputs.expected_source_commit }}
+          PUBLISH_CONFIRMATION: ${{ inputs.publish_confirmation }}
+          REQUIRED_CONFIRMATION: PUBLISH nutrient-document-processing 2.0.0
+          CLAWHUB_RELEASE_ENABLED: ${{ vars.CLAWHUB_RELEASE_ENABLED }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "PSPDFKit-labs/nutrient-agent-skill"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$EXPECTED_SOURCE_COMMIT" = "$GITHUB_SHA"
+          test "$PUBLISH_CONFIRMATION" = "$REQUIRED_CONFIRMATION"
+          test "$CLAWHUB_RELEASE_ENABLED" = "true"
+          test "$(clawhub --cli-version)" = "0.23.3"
+
+      - name: Create owner-only ClawHub auth config
+        env:
+          CLAWHUB_PUBLISH_TOKEN: ${{ secrets.CLAWHUB_TOKEN }}
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub/config.json
+        run: |
+          set -euo pipefail
+          test -n "$CLAWHUB_PUBLISH_TOKEN"
+          umask 077
+          mkdir -p "$(dirname "$CLAWHUB_CONFIG_PATH")"
+          chmod 700 "$(dirname "$CLAWHUB_CONFIG_PATH")"
+          node -e '
+            const fs = require("node:fs");
+            const token = process.env.CLAWHUB_PUBLISH_TOKEN;
+            const configPath = process.env.CLAWHUB_CONFIG_PATH;
+            if (!token || !configPath) process.exit(1);
+            fs.writeFileSync(
+              configPath,
+              `${JSON.stringify({ registry: "https://clawhub.ai", token }, null, 2)}\n`,
+              { encoding: "utf8", mode: 0o600, flag: "wx" },
+            );
+            fs.chmodSync(configPath, 0o600);
+          '
+          test "$(stat -c '%a' "$CLAWHUB_CONFIG_PATH")" = "600"
+
+      - name: Verify ClawHub authentication
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub/config.json
+        run: clawhub --no-input whoami
+
+      - name: Publish exact canonical skill
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub/config.json
+        run: |
+          clawhub --no-input skill publish nutrient-document-processing \
+            --slug nutrient-document-processing \
+            --name "Nutrient Document Processing" \
+            --owner jdrhyne \
+            --version 2.0.0 \
+            --changelog "Correct DWS 3.1.0 contracts, product routing, paid-run consent, credential handling, and safe outputs." \
+            --tags latest \
+            --categories integrations,automation,knowledge \
+            --topics pdf,document-processing,ocr,redaction,document-conversion \
+            --source-repo PSPDFKit-labs/nutrient-agent-skill \
+            --source-commit "$GITHUB_SHA" \
+            --source-ref "$GITHUB_REF" \
+            --source-path nutrient-document-processing \
+            --json
+
+      - name: Remove temporary ClawHub auth config
+        if: always()
+        env:
+          CLAWHUB_CONFIG_PATH: ${{ runner.temp }}/clawhub/config.json
+        run: |
+          set -euo pipefail
+          rm -f -- "$CLAWHUB_CONFIG_PATH"
+          rmdir -- "$(dirname "$CLAWHUB_CONFIG_PATH")" 2>/dev/null || true
