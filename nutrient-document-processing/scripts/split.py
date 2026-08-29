@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_binary_output, parse_csv, parse_page_range, handle_error, fix_negative_args
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
@@ -20,12 +21,13 @@ async def main() -> None:
     )
     parser.add_argument("--input", required=True, help="Path or URL to the input PDF.")
     parser.add_argument(
-        "--ranges", required=True, help="Comma-separated page ranges in start:end format."
+        "--ranges", required=True, help="Comma-separated inclusive ranges in start:end format."
     )
     parser.add_argument("--out-dir", dest="out_dir", required=True, help="Output directory.")
     parser.add_argument(
         "--prefix", default="split", help="Filename prefix for output files (default: split)."
     )
+    add_processor_confirmation_args(parser, "split PDF by inclusive page ranges")
     args = parser.parse_args(fix_negative_args())
 
     ranges_raw = parse_csv(args.ranges)
@@ -33,7 +35,7 @@ async def main() -> None:
         parser.error("--ranges requires at least one range in start:end format.")
     ranges = [parse_page_range(r) for r in ranges_raw]
 
-    client = create_client()
+    client = create_client(args)
     results = await client.split(args.input, ranges)
 
     for i, result in enumerate(results):

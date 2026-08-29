@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://www.nutrient.io/api/"><img src="https://img.shields.io/badge/Nutrient-DWS%20API-blue" alt="Nutrient DWS API"></a>
   <a href="https://www.npmjs.com/package/@nutrient-sdk/dws-mcp-server"><img src="https://img.shields.io/npm/v/@nutrient-sdk/dws-mcp-server" alt="npm version"></a>
-  <a href="nutrient-document-processing/LICENSE.txt"><img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License"></a>
+  <a href="nutrient-document-processing/LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT--0-green" alt="License"></a>
   <a href="https://agentskills.io"><img src="https://img.shields.io/badge/Agent%20Skills-compatible-purple" alt="Agent Skills"></a>
 </p>
 
@@ -27,23 +27,22 @@
 
 ## 30-Second Quickstart
 
-**1. Get a free API key** → **<https://dashboard.nutrient.io/sign_up/?product=processor>**
+**1. Get a DWS Processor API key** → **<https://dashboard.nutrient.io/sign_up/?product=processor>**
 
 **2. Install & configure:**
 
 ```bash
 # Install the skill (works with 40+ agents)
 npx skills add PSPDFKit-labs/nutrient-agent-skill
-
-# Set your API key
-export NUTRIENT_API_KEY="pdf_live_..."
 ```
+
+Configure `NUTRIENT_API_KEY` through your agent host's protected runtime environment or secrets manager. Never paste the key into chat, a command argument, logs, or committed configuration. Verify only that the variable is present, not its value.
 
 **3. Ask your agent:**
 
 > *"Extract the text from invoice.pdf"*
 
-That's it. Your agent now has full document processing capabilities.
+Before a run, the agent must show the exact Processor operation, files transferred, and estimated credits, then wait for your approval. Each script pins `nutrient-dws==3.1.0` and requires explicit confirmation flags after approval.
 
 ---
 
@@ -120,8 +119,9 @@ You need to share a document but it contains sensitive data. Ask your agent:
 ```
 patient-records.pdf (contains PII)
   → Detect SSNs, emails, credit cards
-  → Apply black redaction boxes (irreversible)
-  → patient-records-redacted.pdf 🔒
+  → Stage redaction annotations
+  → Visual review and separate approval to apply them irreversibly
+  → Verify patient-records-redacted.pdf 🔒
 ```
 
 > **Tip:** For smarter redaction, try: *"Use AI redaction to find and remove all personally identifiable information from contract.pdf"* — this uses contextual AI analysis instead of pattern matching.
@@ -143,7 +143,6 @@ patient-records.pdf (contains PII)
 | 📋 **Fill Forms** | Programmatic PDF form filling | *"Fill the tax form with these values…"* |
 | 🗂️ **Compliance** | Convert PDFs for archival or accessibility targets like PDF/A and PDF/UA | *"Convert this PDF to PDF/A-2a"* |
 | ⚡ **Optimize** | Optimize and linearize PDFs for web delivery and download performance | *"Linearize this PDF for fast web viewing"* |
-| 📊 **Credits** | Monitor API usage and balance | *"How many API credits do I have left?"* |
 
 ---
 
@@ -176,7 +175,7 @@ Copy the `nutrient-document-processing/` folder to your agent's skills directory
 | **OpenCode** | `.opencode/skills/` | `~/.config/opencode/skills/` |
 | **Windsurf** | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
 | **Amp** | `.agents/skills/` | `~/.config/agents/skills/` |
-| **OpenClaw** | `skills/` | `~/.moltbot/skills/` |
+| **OpenClaw** | `skills/` | `~/.openclaw/skills/` |
 | **Roo Code** | `.roo/skills/` | `~/.roo/skills/` |
 
 Example for Claude Code:
@@ -207,7 +206,7 @@ nutrient-document-processing/
 │       └── custom-workflow-template.py  # Runtime pipeline template
 ├── tests/
 │   └── testing-guide.md
-└── LICENSE.txt                       # Apache-2.0
+└── LICENSE.txt                       # MIT-0 (required for ClawHub distribution)
 ```
 
 ### Script Model
@@ -215,7 +214,7 @@ nutrient-document-processing/
 - `scripts/*.py` are single-operation scripts only.
 - Multi-step workflows are generated at runtime in a temporary script from `assets/templates/custom-workflow-template.py`.
 - Do not commit runtime pipeline scripts.
-- Use `references/` for HTML/URL generation, compliance outputs, and other workflows that are easier to express as direct API payloads or temporary pipelines.
+- Use `references/` for product routing, verified payloads, compliance outputs, and temporary pipelines. When an exact raw contract is not confirmed, use the pinned typed helper.
 
 ## Documentation
 
@@ -233,4 +232,4 @@ Built by [Nutrient](https://www.nutrient.io/) (formerly PSPDFKit) — document S
 
 ## License
 
-[Apache-2.0](nutrient-document-processing/LICENSE.txt)
+[MIT-0](nutrient-document-processing/LICENSE.txt)

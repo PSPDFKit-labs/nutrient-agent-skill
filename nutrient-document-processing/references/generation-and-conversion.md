@@ -1,119 +1,67 @@
 # Generation and Conversion
 
-Use these patterns when the main task is to generate a new document or convert an existing one into another format.
+Use DWS Processor for document generation and conversion. Obtain an estimate and approval before invoking any example.
 
-## HTML to PDF generation
+## HTML to PDF
 
-Upload the HTML file and reference it through `parts[].html`.
+Use the custom workflow template with the pinned typed builder. It registers the HTML upload and keeps layout options on the HTML part:
+
+```python
+result = await (
+    client.workflow()
+    .add_html_part(
+        "index.html",
+        options={"layout": {"orientation": "landscape", "size": "A4"}},
+    )
+    .output_pdf()
+    .execute()
+)
+write_workflow_output(result, "result.pdf")
+```
+
+Create `client` with the template's confirmation-gated helper. Route asset registration through `add_html_part(..., assets=...)` rather than guessing multipart handles.
+
+## Remote input
+
+The pinned builder accepts a remote URL as a file input. Nutrient fetches that URL server-side:
+
+```python
+result = await client.convert("https://example.invalid/document.docx", "pdf")
+```
+
+Confirm the URL transfer and only allow expected HTTPS sources. Do not fetch arbitrary user-controlled URLs inside a privileged local network.
+
+## Typed conversion
+
+Use `scripts/convert.py`. `client.convert(input, target)` maps the current target correctly and may return:
+
+- `buffer` for PDF, PDF/A, PDF/UA, Office, or image output;
+- `content` for HTML or markdown;
+- `data` for JSON-content when using a suitable workflow.
+
+The helper handles all three shapes safely. This is preferred to hard-coding an Office or image output payload whose wire contract may evolve.
+
+Example shape after the user approves the exact estimate and transfer:
 
 ```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F index.html=@index.html \
-  -F 'instructions={"parts":[{"html":"index.html"}]}' \
-  -o result.pdf
+uv run scripts/convert.py \
+  --input document.pdf \
+  --format markdown \
+  --out document.md \
+  --estimated-credits APPROVED_NUMBER \
+  --confirm-external-processing
 ```
 
-With layout options:
+## Rules
 
-```json
-{
-  "parts": [{ "html": "index.html" }],
-  "output": {
-    "type": "pdf",
-    "layout": {
-      "orientation": "landscape",
-      "size": "A4",
-      "margin": { "top": 20, "bottom": 20, "left": 15, "right": 15 }
-    }
-  }
-}
-```
+- Generate from HTML when you control source markup and need reproducible layout.
+- Use the typed helper for Office and image targets rather than inferring `output.type` fields.
+- Page selections are inclusive.
+- Choose a new output path; helpers refuse overwrite.
+- High-fidelity markdown/spatial parsing is a Data Extraction job, not the same as Processor conversion to markdown.
 
-## Remote URL generation or conversion
+## Official sources
 
-When the input already lives at a stable remote URL, send a JSON request and use `file.url`:
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -d '{
-    "parts": [
-      {
-        "file": {
-          "url": "https://www.nutrient.io/api/assets/downloads/samples/docx/document.docx"
-        }
-      }
-    ]
-  }' \
-  -o result.pdf
-```
-
-Use this pattern when you want server-side fetches and do not need to upload a local file first.
-
-## Office to PDF
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.docx=@document.docx \
-  -F 'instructions={"parts":[{"file":"document.docx"}]}' \
-  -o result.pdf
-```
-
-Supported common inputs: `docx`, `xlsx`, `pptx`, `doc`, `xls`, `ppt`, `odt`, `ods`, `odp`, `rtf`
-
-## Image to PDF
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F photo.jpg=@photo.jpg \
-  -F 'instructions={"parts":[{"file":"photo.jpg"}]}' \
-  -o result.pdf
-```
-
-Supported common images: `jpg`, `jpeg`, `png`, `gif`, `webp`, `tiff`, `bmp`
-
-## PDF to Office
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"output":{"type":"docx"}}' \
-  -o result.docx
-```
-
-Supported common outputs: `docx`, `xlsx`, `pptx`
-
-## PDF to image
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf","pages":{"start":0,"end":0}}],"output":{"type":"png","dpi":150}}' \
-  -o page.png
-```
-
-Useful output options:
-
-| Option | Meaning |
-|--------|---------|
-| `type` | `png`, `jpeg`, or `webp` |
-| `dpi` | Resolution target |
-| `width` / `height` | Explicit pixel size |
-
-## Generation and conversion rules
-
-- Use HTML generation when you control the markup and need stable, reproducible output.
-- Use remote URL requests when the source already exists online and you want to avoid local uploads.
-- Use `output.type` for direct conversions. Do not create unnecessary `actions` for simple format changes.
-- For paginated image output, render only the pages you need.
-
-## Official docs
-
-- [PDF generator / converter overview](https://www.nutrient.io/api/pdf-converter-api/)
+- [PDF converter API](https://www.nutrient.io/api/pdf-converter-api/)
 - [URL to PDF API](https://www.nutrient.io/api/url-to-pdf-api/)
+- [Processor API overview](https://www.nutrient.io/api/processor-api/)

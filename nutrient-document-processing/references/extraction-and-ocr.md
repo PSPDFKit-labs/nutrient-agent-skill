@@ -1,100 +1,88 @@
 # Extraction and OCR
 
-Use these patterns when the goal is to pull machine-readable data from PDFs or scans.
+## Route the requested output
 
-## Extract plain text
+- Use **Processor JSON-content extraction** for page-level plain text, tables, key-value pairs, and structured text inside a Processor workflow.
+- Use the separate **Data Extraction API** for high-fidelity markdown or spatial JSON parsing. It has a separate endpoint, credential, and credit pool; do not emulate it with a Processor `actions` payload.
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"output":{"type":"text"}}' \
-  -o extracted.txt
-```
+## Processor text extraction
 
-## Extract tables
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"extraction","strategy":"tables"}],"output":{"type":"xlsx"}}' \
-  -o tables.xlsx
-```
-
-Common structured outputs: `xlsx`, `json`, `xml`, `csv`
-
-## Extract key-value pairs
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"extraction","strategy":"key-values"}],"output":{"type":"json"}}' \
-  -o pairs.json
-```
-
-## Basic OCR
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F scanned.pdf=@scanned.pdf \
-  -F 'instructions={"parts":[{"file":"scanned.pdf"}],"actions":[{"type":"ocr","language":"english"}]}' \
-  -o searchable.pdf
-```
-
-## Multi-language OCR
+The contract used by `client.extract_text()` is:
 
 ```json
 {
-  "parts": [{ "file": "scanned.pdf" }],
-  "actions": [{ "type": "ocr", "language": ["english", "german", "french"] }]
+  "parts": [{"file": "document"}],
+  "output": {
+    "type": "json-content",
+    "plainText": true,
+    "tables": false
+  }
 }
 ```
 
-## OCR on images
+Use `scripts/extract-text.py`. It writes the `data` object as JSON and can separately write page `plainText` values.
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F scan.jpg=@scan.jpg \
-  -F 'instructions={"parts":[{"file":"scan.jpg"}],"actions":[{"type":"ocr","language":"english"}]}' \
-  -o searchable.pdf
+## Processor table extraction
+
+The contract used by `client.extract_table()` is:
+
+```json
+{
+  "parts": [{"file": "document"}],
+  "output": {
+    "type": "json-content",
+    "plainText": false,
+    "tables": true
+  }
+}
 ```
 
-## OCR languages
+Use `scripts/extract-table.py`; there is no `extraction` build action and no promise that the result is XLSX.
 
-Common OCR languages include:
+## Processor key-value extraction
 
-- `english`
-- `german`
-- `french`
-- `spanish`
-- `italian`
-- `portuguese`
-- `dutch`
-- `swedish`
-- `polish`
-- `czech`
-- `turkish`
-- `japanese`
-- `korean`
-- `chinese-simplified`
-- `chinese-traditional`
-- `arabic`
-- `hebrew`
-- `hindi`
-- `russian`
+The contract used by `client.extract_key_value_pairs()` is:
 
-## OCR and extraction rules
+```json
+{
+  "parts": [{"file": "document"}],
+  "output": {
+    "type": "json-content",
+    "plainText": false,
+    "tables": false,
+    "keyValuePairs": true
+  }
+}
+```
 
-- OCR before extraction when text is image-only, unselectable, or suspiciously sparse.
-- Tables and key-values benefit from cleaner scans and correct page orientation.
-- For multilingual inputs, pass an array of languages rather than guessing a single language.
-- If OCR quality is poor, fix source orientation and scan quality before retrying.
+Use `scripts/extract-key-value-pairs.py`.
 
-## Official docs
+## OCR
 
-- [Data extraction overview](https://www.nutrient.io/api/data-extraction-api/)
+OCR is a part action in the pinned client:
+
+```json
+{
+  "parts": [
+    {
+      "file": "scan",
+      "actions": [{"type": "ocr", "language": ["english", "german"]}]
+    }
+  ],
+  "output": {"type": "pdf"}
+}
+```
+
+Use `scripts/ocr.py` so the 3.1.0 `OcrLanguage` contract controls accepted language values. Do not copy an unverified language list into a raw request.
+
+## Rules
+
+- Extract first from born-digital files; OCR only when text is missing or unusable.
+- OCR a scan before Processor extraction or text-matching redaction.
+- Page ranges are zero-based and inclusive.
+- A second OCR/extraction stage is another paid request and needs a new estimate and approval.
+
+## Official sources
+
+- [Data Extraction API](https://www.nutrient.io/api/data-extraction-api/)
 - [Processor API overview](https://www.nutrient.io/api/processor-api/)

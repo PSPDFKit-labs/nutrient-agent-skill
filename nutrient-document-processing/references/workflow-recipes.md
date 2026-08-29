@@ -1,98 +1,52 @@
 # Workflow Recipes
 
-Use these patterns when the task spans more than one DWS feature and ordering matters.
+Each numbered step that invokes DWS is a distinct external transfer and paid request unless combined into one reviewed custom Processor workflow. Present the exact operation, inputs, product, and estimate and obtain action-time approval for every request.
 
-## 1. Scan to searchable text
+## Scan to searchable text
 
-Goal: take an image-only PDF and produce both a searchable PDF and extracted text.
+1. Inspect locally to confirm the PDF lacks a usable text layer.
+2. Processor OCR.
+3. Processor JSON-content extraction, or Data Extraction parsing when the requested output is high-fidelity markdown/spatial JSON.
 
-Recommended sequence:
+Do not treat Processor and Data Extraction as the same key or credit pool.
 
-1. OCR the source PDF into a searchable PDF.
-2. Extract text from the searchable result.
+## Scan to redacted delivery PDF
 
-Reasoning: OCR improves extraction quality and gives you a reusable intermediate artifact.
+1. Processor OCR if required.
+2. Stage deterministic or AI redaction annotations.
+3. Render and visually review matches and misses.
+4. Obtain separate approval for irreversible application.
+5. Apply redactions.
+6. Render and search/extract the final PDF to verify removal.
+7. Optionally optimize, then sign last.
 
-## 2. Scan to redacted delivery PDF
+## HTML report to archival PDF
 
-Goal: redact a scanned document and deliver a shareable PDF.
+1. Generate with a typed HTML part and explicit layout options.
+2. Emit PDF/A with the pinned Processor builder.
+3. Validate with the required archival checker.
 
-Recommended sequence:
+## Accessible output
 
-1. OCR
-2. Preset or regex redaction
-3. Optional watermark
-4. Optional optimization or linearization
-5. Signature last, if required
+1. Start from the cleanest structured source.
+2. For a Processor output transform, use `/build` PDF/UA through the typed helper.
+3. For current auto-tagging and PDF/UA validation workflows, route to the separate Accessibility product.
+4. Validate; never claim compliance from code existence or a successful HTTP response alone.
 
-Reasoning: OCR enables reliable matching, and signatures should only happen after all content mutations are complete.
+## Form packet to signed output
 
-## 3. HTML report to archival PDF
+1. Apply Instant JSON or XFDF using the pinned builder.
+2. Flatten only if editability is no longer needed.
+3. Complete all redaction, assembly, and optimization.
+4. Confirm explicit CMS/CAdES configuration and sign last.
+5. Independently validate the embedded signature and trust chain.
 
-Goal: generate a PDF from structured content and archive it.
+## Packet assembly and web delivery
 
-Recommended sequence:
+1. Merge/reorder parts.
+2. Select inclusive page ranges and fix rotation.
+3. Apply final content changes.
+4. Optimize/linearize for delivery.
+5. Sign last if required.
 
-1. Generate PDF from HTML
-2. Convert the result to PDF/A
-3. Validate the archival output in your downstream compliance workflow if required
-
-Reasoning: HTML generation gives you better structure control than post-hoc browser printing, and PDF/A should be treated as a final archival artifact.
-
-## 4. Existing PDF to accessible PDF/UA
-
-Goal: turn a born-digital PDF into a screen-reader-ready artifact.
-
-Recommended sequence:
-
-1. Start from the cleanest available PDF
-2. Run PDF/UA auto-tagging
-3. Validate the result with your required accessibility checker
-
-Reasoning: flattened, rasterized, or noisy inputs reduce tagging quality.
-
-## 5. Form packet to signed output
-
-Goal: fill a form, remove interactivity if needed, and sign it.
-
-Recommended sequence:
-
-1. Fill form fields
-2. Optional flattening
-3. Signature last
-
-Reasoning: signing too early forces a second mutation pass and can invalidate the signed artifact.
-
-## 6. Web delivery PDF
-
-Goal: publish a PDF that streams quickly in viewers.
-
-Recommended sequence:
-
-1. Final content edits
-2. Optional compression
-3. Linearization
-4. Publish to a server that supports byte-range requests
-
-Reasoning: linearization is a delivery concern, not an authoring concern.
-
-## 7. Packet assembly before signing
-
-Goal: merge multiple PDFs, fix page orientation, and produce a final packet for signing or distribution.
-
-Recommended sequence:
-
-1. Merge or reorder the required parts
-2. Extract or omit page ranges as needed
-3. Optional page rotation
-4. Optional flattening
-5. Watermark, sign, optimize, or linearize last
-
-Reasoning: assembly and page normalization are still content mutations. Final-artifact operations should happen only after the packet shape is stable.
-
-## Recipe heuristics
-
-- Keep OCR early.
-- Keep compliance targets intentional.
-- Keep signatures last.
-- Treat optimization as a delivery-stage step unless the workflow explicitly needs it earlier.
+All helpers refuse to overwrite existing outputs, so every intermediate and retry must have a deliberate new path.

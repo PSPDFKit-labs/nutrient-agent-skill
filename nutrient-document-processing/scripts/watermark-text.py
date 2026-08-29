@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_binary_output, handle_error
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
@@ -21,6 +22,7 @@ async def main() -> None:
     parser.add_argument("--opacity", type=float, help="Watermark opacity (0.0–1.0).")
     parser.add_argument("--font-size", dest="font_size", type=int, help="Font size in points.")
     parser.add_argument("--rotation", type=int, help="Rotation angle in degrees (integer).")
+    add_processor_confirmation_args(parser, "apply text watermark")
     args = parser.parse_args()
 
     options: dict = {}
@@ -31,7 +33,7 @@ async def main() -> None:
     if args.rotation is not None:
         options["rotation"] = args.rotation
 
-    client = create_client()
+    client = create_client(args)
     result = await client.watermark_text(args.input, args.text, options or None)
     write_binary_output(result, args.out)
 

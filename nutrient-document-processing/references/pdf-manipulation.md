@@ -1,96 +1,54 @@
 # PDF Manipulation
 
-Use these patterns when the task is about assembling, slicing, or normalizing PDFs before final delivery operations.
+Use the pinned helpers for page operations. They handle remote/local inputs consistently, gate the paid request, and refuse output overwrite.
 
-## Merge PDFs
+## Merge
 
 Part order controls merge order:
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F cover=@cover.pdf \
-  -F body=@body.pdf \
-  -F appendix=@appendix.pdf \
-  -F 'instructions={
-    "parts": [
-      { "file": "cover" },
-      { "file": "body" },
-      { "file": "appendix" }
-    ]
-  }' \
-  -o packet.pdf
-```
-
-## Split or extract page ranges
-
-Use `pages` on a part to carve out a subset:
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document=@document.pdf \
-  -F 'instructions={
-    "parts": [
-      {
-        "file": "document",
-        "pages": { "start": 0, "end": 4 }
-      }
-    ]
-  }' \
-  -o first-five-pages.pdf
-```
-
-## Reorder or assemble a packet from ranges
-
-Reuse the same source part with different page ranges to build a new packet:
 
 ```json
 {
   "parts": [
-    { "file": "document", "pages": { "start": 5, "end": 9 } },
-    { "file": "document", "pages": { "start": 0, "end": 4 } }
-  ]
+    {"file": "cover"},
+    {"file": "body"},
+    {"file": "appendix"}
+  ],
+  "output": {"type": "pdf"}
 }
 ```
 
-## Rotate pages
+Use `scripts/merge.py` when possible.
 
-Use a rotation action when page orientation is wrong:
+## Inclusive page ranges
+
+`pages.start` and `pages.end` are zero-based and inclusive:
 
 ```json
 {
-  "parts": [{ "file": "document.pdf" }],
-  "actions": [
-    {
-      "type": "rotate",
-      "rotation": 90,
-      "pages": [0, 1, 2]
-    }
-  ]
+  "parts": [
+    {"file": "document", "pages": {"start": 0, "end": 4}}
+  ],
+  "output": {"type": "pdf"}
 }
 ```
 
-## Flatten forms or annotations
+This produces the first **five** pages. To reorder, reuse the source as multiple parts in the desired order. Use `scripts/split.py` for multiple output files and `scripts/duplicate-pages.py` for exact indexes.
 
-Flatten only when the output should stop being interactive:
+## Rotate
 
-```json
-{
-  "parts": [{ "file": "document.pdf" }],
-  "actions": [{ "type": "flatten" }]
-}
-```
+Use `scripts/rotate.py` for full or selective rotation. The pinned typed helper uses `rotateBy` and assembles unselected pages correctly; do not invent a top-level `rotation`/`pages` action.
+
+## Flatten
+
+The current build action is `{ "type": "flatten" }`, nested on the affected part (optionally with `annotationIds`). Flatten only after the user confirms the form or annotations no longer need to remain editable.
 
 ## Rules
 
-- Page indexes are zero-based. `end: -1` means the last page.
-- Assemble the full packet before watermarking, signing, optimizing, or linearizing.
-- Rotate before rasterizing or signing if the source orientation is incorrect.
-- Flatten late. It removes editability from forms and many annotation workflows.
-- Keep passwords on the affected `part` when slicing or merging encrypted inputs.
+- Assemble and normalize the whole packet before watermarking, redacting, signing, or final optimization.
+- Keep passwords on the affected part when a protected input is used.
+- Signing and irreversible redaction apply steps require separate approval after assembly.
 
-## Official docs
+## Official sources
 
 - [Processor API overview](https://www.nutrient.io/api/processor-api/)
-- [Tools and APIs](https://www.nutrient.io/api/documentation/tools-and-api/)
+- [Processor tools and APIs](https://www.nutrient.io/api/documentation/tools-and-api/)

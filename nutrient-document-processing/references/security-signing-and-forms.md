@@ -1,141 +1,101 @@
 # Security, Signing, and Forms
 
-Use these patterns when the task is about redaction, watermarking, signatures, form fill, or document protection.
+## Redaction is staged
 
-## Preset redaction
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"redaction","strategy":"preset","preset":"email-address"}]}' \
-  -o redacted.pdf
-```
-
-Common presets:
-
-- `social-security-number`
-- `credit-card-number`
-- `email-address`
-- `north-american-phone-number`
-- `international-phone-number`
-- `date`
-- `url`
-- `ipv4`
-- `ipv6`
-- `mac-address`
-- `us-zip-code`
-- `vin`
-- `time`
-
-## Regex redaction
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"redaction","strategy":"regex","regex":"\\b\\d{3}-\\d{2}-\\d{4}\\b","caseSensitive":false}]}' \
-  -o redacted.pdf
-```
-
-## AI redaction
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"ai_redaction","criteria":"All personally identifiable information"}]}' \
-  -o redacted.pdf
-```
-
-Use AI redaction for contextual asks. Use preset or regex redaction for explicit patterns.
-
-## Text watermark
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"watermark","watermarkType":"text","text":"DRAFT","fontSize":72,"fontColor":"#FF0000","opacity":0.3,"rotation":45,"width":"50%","height":"50%"}]}' \
-  -o watermarked.pdf
-```
-
-## Image watermark
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F logo.png=@logo.png \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"watermark","watermarkType":"image","imagePath":"logo.png","width":"25%","height":"25%","opacity":0.5}]}' \
-  -o watermarked.pdf
-```
-
-## CMS signature
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"sign","signatureType":"cms","signerName":"John Doe","reason":"Document approval","location":"San Francisco"}]}' \
-  -o signed.pdf
-```
-
-## CAdES signature
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document.pdf=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document.pdf"}],"actions":[{"type":"sign","signatureType":"cades","cadesLevel":"b-lt","signerName":"Jane Smith"}]}' \
-  -o signed.pdf
-```
-
-## Fill form fields
+Creating redaction annotations does not remove content. The current deterministic preset action is:
 
 ```json
 {
-  "parts": [{ "file": "form.pdf" }],
-  "actions": [{
-    "type": "fillForm",
-    "fields": [
-      { "name": "firstName", "value": "John" },
-      { "name": "lastName", "value": "Doe" },
-      { "name": "email", "value": "john@example.com" },
-      { "name": "agree", "value": true }
-    ]
-  }]
+  "parts": [
+    {
+      "file": "document",
+      "actions": [
+        {
+          "type": "createRedactions",
+          "strategy": "preset",
+          "strategyOptions": {"preset": "email-address"}
+        }
+      ]
+    }
+  ],
+  "output": {"type": "pdf"}
 }
 ```
 
-## Encrypt output
+Regex uses the same action with `strategy: "regex"` and `strategyOptions.regex`. The pinned `BuildActions.create_redactions_preset()` and `create_redactions_regex()` helpers are the source of truth for optional settings.
+
+For contextual matching, `scripts/redact-ai.py` calls the separate AI-redaction route through the typed client, accepts only a local PDF, and always requests `stage`. It never offers an immediate apply mode.
+
+After staging:
+
+1. render and visually review every page;
+2. check false positives and missed sensitive values;
+3. present a new credit estimate and irreversible-action warning;
+4. obtain fresh approval;
+5. apply with `client.apply_redactions(staged_pdf)` or `BuildActions.apply_redactions()`;
+6. render again and search/extract to verify sensitive content is gone.
+
+Never describe a staged artifact as redacted.
+
+## Watermark
+
+The text action uses `text` directly. Dimensions are objects, not percentage strings:
 
 ```json
 {
-  "parts": [{ "file": "document.pdf" }],
-  "output": {
-    "type": "pdf",
-    "owner_password": "owner123",
-    "user_password": "user456"
-  }
+  "type": "watermark",
+  "text": "DRAFT",
+  "opacity": 0.3,
+  "rotation": 45,
+  "width": {"value": 50, "unit": "%"},
+  "height": {"value": 50, "unit": "%"}
 }
 ```
 
-## Open a password-protected input
+Use `scripts/watermark-text.py` or the pinned builder. Image watermarks use `image` and should be registered by `BuildActions.watermark_image()`; do not invent `watermarkType` or `imagePath`.
+
+## Signing
+
+Signing is a separate `/sign` operation exposed as `client.sign()`; it is not a `/build` `sign` action. The primary PDF must be local.
+
+`scripts/sign.py` requires a JSON configuration file. Minimal examples:
 
 ```json
-{
-  "parts": [{ "file": "protected.pdf", "password": "user456" }]
-}
+{"signatureType": "cms", "flatten": false}
 ```
 
-## Rules
+```json
+{"signatureType": "cades", "cadesLevel": "b-lt", "flatten": false}
+```
 
-- Redact before signing. Signed documents should be treated as final artifacts.
-- Deterministic redaction is easier to verify than AI redaction.
-- Confirm real signing requirements before promising a legally sufficient workflow.
-- Use real field names for form fill. Do not guess from visible labels.
+Do not rely on an implicit default signature. Confirm CMS versus CAdES, CAdES level, field/position, appearance, and any signing images before the run. After writing the PDF, the helper verifies the PDF container; independently validate that the expected signature is embedded and that its trust chain and timestamp meet the user's requirements.
 
-## Official docs
+## Form data
 
-- [Tools and APIs](https://www.nutrient.io/api/documentation/tools-and-api/)
+The current Processor build actions are `applyInstantJson` and `applyXfdf`, with the data file registered by the typed builder. There is no `fillForm` action. Use `BuildActions.apply_instant_json(file)` or `BuildActions.apply_xfdf(file, options)` in the custom workflow template and use real PDF field names.
+
+## Password protection
+
+Use `scripts/password-protect.py`. It reads user and owner passwords from separate owner-only local files, not command arguments:
+
+```bash
+chmod 600 /protected/path/user-password /protected/path/owner-password
+uv run scripts/password-protect.py \
+  --input document.pdf \
+  --user-password-file /protected/path/user-password \
+  --owner-password-file /protected/path/owner-password \
+  --out protected.pdf \
+  --estimated-credits APPROVED_NUMBER \
+  --confirm-external-processing
+```
+
+Delete temporary secret files with the user's approval and normal secure-storage workflow. Do not print their contents.
+
+## Ordering
+
+Fill, redact, flatten, assemble, and optimize before signing. Treat an applied redaction and a signature as final-artifact operations, each with independent approval and verification.
+
+## Official sources
+
+- [Processor tools and APIs](https://www.nutrient.io/api/documentation/tools-and-api/)
+- [Processor API overview](https://www.nutrient.io/api/processor-api/)

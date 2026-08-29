@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_binary_output, read_json_file, parse_json_string, handle_error
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
@@ -28,6 +29,7 @@ async def main() -> None:
     parser.add_argument(
         "--options-json", dest="options_json", help="JSON string with optimization options."
     )
+    add_processor_confirmation_args(parser, "optimize PDF")
     args = parser.parse_args()
 
     options = None
@@ -36,7 +38,7 @@ async def main() -> None:
     if args.options_json:
         options = parse_json_string(args.options_json)
 
-    client = create_client()
+    client = create_client(args)
     result = await client.optimize(args.input, options)
     write_binary_output(result, args.out)
 

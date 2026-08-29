@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_binary_output, handle_error, fix_negative_args
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
@@ -21,12 +22,13 @@ async def main() -> None:
     )
     parser.add_argument("--out", required=True, help="Output file path.")
     parser.add_argument("--index", type=int, help="Insertion index (0-based; default: end).")
+    add_processor_confirmation_args(parser, "add blank PDF pages")
     args = parser.parse_args(fix_negative_args())
 
     if args.count <= 0:
         parser.error("--count must be a positive integer.")
 
-    client = create_client()
+    client = create_client(args)
     result = await client.add_page(args.input, args.count, args.index)
     write_binary_output(result, args.out)
 
