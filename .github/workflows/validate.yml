@@ -19,11 +19,21 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install YAML parser
-        run: python -m pip install --disable-pip-version-check pyyaml
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install pinned validation tools
+        run: |
+          python -m pip install --disable-pip-version-check pyyaml
+          npm install --global clawhub@0.23.3
 
       - name: Validate repo structure
         run: python tools/validate-repo.py
+
+      - name: Validate Agent Skill package
+        run: python tools/quick_validate.py nutrient-document-processing
 
       - name: Validate Codex metadata
         run: |
@@ -43,10 +53,9 @@ jobs:
 
       - name: Compile Python scripts
         run: |
-          python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py
+          python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py nutrient-document-processing/assets/templates/custom-workflow-template.py tools/*.py
 
-      - name: Smoke test script help
+      - name: Run offline contract tests
         run: |
-          for script in nutrient-document-processing/scripts/*.py; do
-            python "$script" --help > /dev/null
-          done
+          python -m unittest discover -s tests -v
+          python -m unittest discover -s tools -p 'test_*.py' -v

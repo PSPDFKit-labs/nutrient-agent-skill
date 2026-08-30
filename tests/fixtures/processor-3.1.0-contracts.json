@@ -1,0 +1,20 @@
+{
+  "source": "nutrient-dws 3.1.0 typed builder and client",
+  "page_ranges": {
+    "indexing": "zero-based",
+    "end": "inclusive",
+    "first_five_pages": {"start": 0, "end": 4}
+  },
+  "outputs": {
+    "extract_text": {"type": "json-content", "plainText": true, "tables": false},
+    "extract_table": {"type": "json-content", "plainText": false, "tables": true},
+    "extract_key_value_pairs": {"type": "json-content", "plainText": false, "tables": false, "keyValuePairs": true}
+  },
+  "actions": {
+    "rotate": {"type": "rotate", "rotateBy": 90},
+    "preset_redaction": {"type": "createRedactions", "strategy": "preset", "strategyOptions": {"preset": "email-address"}},
+    "apply_redactions": {"type": "applyRedactions"},
+    "instant_json": {"type": "applyInstantJson", "file": "registered-file-handle"}
+  },
+  "result_shapes": ["buffer", "content", "data"]
+}

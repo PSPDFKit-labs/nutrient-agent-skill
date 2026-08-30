@@ -1,85 +1,39 @@
 # Testing Guide
 
-## Requirements
+## Offline validation (default)
 
-- Python 3.10+
-- `uv` on `PATH`
-- `NUTRIENT_API_KEY` set
-- **Multi-page PDF input** (3+ pages recommended for comprehensive testing)
+Run from the repository root. These commands do not need an API key and must not make a DWS request:
 
 ```bash
-export NUTRIENT_API_KEY="nutr_sk_..."
-# NOTE: Use a multi-page PDF (3+ pages required for split.py and delete-pages.py)
-PDF=/path/to/your/input.pdf
-OUT=/tmp/ndp-test
-mkdir -p "$OUT"
+python tools/validate-repo.py
+python -m py_compile nutrient-document-processing/scripts/*.py nutrient-document-processing/scripts/lib/common.py nutrient-document-processing/assets/templates/custom-workflow-template.py
+python -m unittest discover -s tests -v
 ```
 
-Run commands from repository root.
+The offline suite verifies the pinned dependency, package metadata, inclusive page ranges, Processor JSON-content fixtures, ContentOutput handling, consent gate, staged-only AI redaction, protected password input, portable template, and atomic no-overwrite output behavior.
 
-## 1. Smoke tests
+## Help smoke
 
-All scripts should print help and exit 0:
+The unittest suite invokes every single-operation script with `--help` using Python. Help must exit zero without an API key or installed SDK. Do not add `--confirm-external-processing` to a smoke test.
 
-```bash
-uv run nutrient-document-processing/scripts/convert.py --help
-uv run nutrient-document-processing/scripts/merge.py --help
-uv run nutrient-document-processing/scripts/split.py --help
-uv run nutrient-document-processing/scripts/ocr.py --help
-uv run nutrient-document-processing/scripts/extract-text.py --help
-uv run nutrient-document-processing/scripts/extract-table.py --help
-uv run nutrient-document-processing/scripts/extract-key-value-pairs.py --help
-uv run nutrient-document-processing/scripts/watermark-text.py --help
-uv run nutrient-document-processing/scripts/redact-ai.py --help
-uv run nutrient-document-processing/scripts/rotate.py --help
-uv run nutrient-document-processing/scripts/sign.py --help
-uv run nutrient-document-processing/scripts/optimize.py --help
-uv run nutrient-document-processing/scripts/password-protect.py --help
-uv run nutrient-document-processing/scripts/add-pages.py --help
-uv run nutrient-document-processing/scripts/delete-pages.py --help
-uv run nutrient-document-processing/scripts/duplicate-pages.py --help
-```
+## Optional live validation
 
-## 2. Single-operation happy-path checks
+A live Processor request is paid and transfers the selected document to Nutrient. It is not part of repository validation.
 
-```bash
-uv run nutrient-document-processing/scripts/convert.py --input "$PDF" --format docx --out "$OUT/convert.docx"
-uv run nutrient-document-processing/scripts/merge.py --inputs "$PDF,$PDF" --out "$OUT/merge.pdf"
-uv run nutrient-document-processing/scripts/split.py --input "$PDF" --ranges "0:1" --out-dir "$OUT/split" --prefix part
-uv run nutrient-document-processing/scripts/ocr.py --input "$PDF" --languages english --out "$OUT/ocr.pdf"
-uv run nutrient-document-processing/scripts/extract-text.py --input "$PDF" --out "$OUT/text.json"
-uv run nutrient-document-processing/scripts/extract-table.py --input "$PDF" --out "$OUT/tables.json"
-uv run nutrient-document-processing/scripts/extract-key-value-pairs.py --input "$PDF" --out "$OUT/kvp.json"
-uv run nutrient-document-processing/scripts/watermark-text.py --input "$PDF" --text CONFIDENTIAL --out "$OUT/watermark.pdf"
-uv run nutrient-document-processing/scripts/redact-ai.py --input "$PDF" --criteria "Remove all SSNs" --mode stage --out "$OUT/redact-stage.pdf"
-uv run nutrient-document-processing/scripts/rotate.py --input "$PDF" --angle 90 --out "$OUT/rotate.pdf"
-uv run nutrient-document-processing/scripts/sign.py --input "$PDF" --out "$OUT/sign.pdf"
-uv run nutrient-document-processing/scripts/optimize.py --input "$PDF" --out "$OUT/optimize.pdf"
-uv run nutrient-document-processing/scripts/password-protect.py --input "$PDF" --user-password upass --owner-password opass --out "$OUT/protected.pdf"
-uv run nutrient-document-processing/scripts/add-pages.py --input "$PDF" --count 1 --out "$OUT/add-pages.pdf"
-uv run nutrient-document-processing/scripts/delete-pages.py --input "$PDF" --pages 0 --out "$OUT/delete-pages.pdf"
-uv run nutrient-document-processing/scripts/duplicate-pages.py --input "$PDF" --pages 1,0,1 --out "$OUT/duplicate-pages.pdf"
-```
+Immediately before one live smoke:
 
-## 3. Multi-step workflow behavior
+1. select one exact operation and input;
+2. obtain its current credit estimate;
+3. show the user the product, operation, input transfer, estimate, and new output path;
+4. wait for explicit approval;
+5. run only that approved command with `--estimated-credits NUMBER --confirm-external-processing`;
+6. inspect the artifact and account usage.
 
-No multi-step script should exist in `scripts/`.
+Do not batch all helpers into a live test. A retry, redaction apply, signature, or second operation needs a new estimate and approval. No live request was used to validate this package refresh.
 
-Build runtime pipelines in a temporary file using the template:
+## High-risk output checks
 
-```bash
-TMP_SCRIPT=/tmp/ndp-runtime-pipeline.py
-cp nutrient-document-processing/assets/templates/custom-workflow-template.py "$TMP_SCRIPT"
-# edit $TMP_SCRIPT for the requested pipeline
-uv run "$TMP_SCRIPT" --input "$PDF" --out "$OUT/pipeline.pdf"
-rm -f "$TMP_SCRIPT"
-```
-
-## 4. Pass criteria
-
-- All `--help` commands succeed.
-- Single-operation scripts produce output files (using a multi-page PDF).
-- Multi-step workflows are run from temporary scripts only.
-- No committed pipeline scripts exist in `nutrient-document-processing/scripts/`.
-
-**Note:** Single-page PDFs will cause failures in `split.py` and `delete-pages.py`. Use a multi-page PDF (3+ pages) for complete test coverage.
+- **Staged redaction:** render every page, review matches and misses, and do not call it redacted.
+- **Applied redaction:** after separate approval, render again and search/extract for the sensitive values.
+- **Signing:** validate the expected embedded signature, certificate trust chain, timestamp, and post-signature modification state with an independent validator.
+- **Compliance:** use the user's required PDF/A or accessibility validator; a successful request alone is not proof of conformance.

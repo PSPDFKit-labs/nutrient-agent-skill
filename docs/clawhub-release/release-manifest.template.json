@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "release": {
+    "kind": "clawhub-skill",
+    "default_mode": "validate",
+    "publisher": "jdrhyne",
+    "slug": "nutrient-document-processing",
+    "name": "Nutrient Document Processing",
+    "version": "2.0.0",
+    "changelog": "Correct DWS 3.1.0 contracts, product routing, paid-run consent, credential handling, and safe outputs.",
+    "tags": ["latest"],
+    "categories": ["integrations", "automation", "knowledge"],
+    "topics": ["pdf", "document-processing", "ocr", "redaction", "document-conversion"]
+  },
+  "cli": {
+    "package": "clawhub",
+    "version": "0.23.3",
+    "command": ["clawhub", "skill", "publish"]
+  },
+  "source": {
+    "repository": "PSPDFKit-labs/nutrient-agent-skill",
+    "commit": "__EXACT_GITHUB_SHA__",
+    "ref": "__EXACT_GITHUB_REF__",
+    "path": "nutrient-document-processing"
+  },
+  "gates": {
+    "required_publish_ref": "refs/heads/main",
+    "required_environment": "clawhub-production",
+    "release_enabled_variable": "CLAWHUB_RELEASE_ENABLED",
+    "release_enabled_value": "true",
+    "environment_reviewers_configured_externally": true,
+    "publish_confirmation": "PUBLISH nutrient-document-processing 2.0.0",
+    "expected_commit_must_match": true,
+    "dry_run_before_publish": true,
+    "slug_migration_enabled": false
+  },
+  "prohibited_without_separate_approval": [
+    "metered DWS request",
+    "ClawHub publish",
+    "ClawHub migration",
+    "ClawHub rename",
+    "ClawHub merge",
+    "ClawHub hide",
+    "ClawHub delete",
+    "ClawHub transfer"
+  ]
+}

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,18 +11,20 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_json_output, parse_page_range, handle_error, fix_negative_args
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Extract table data from a document.")
     parser.add_argument("--input", required=True, help="Path or URL to the input document.")
     parser.add_argument("--out", required=True, help="Output JSON file path.")
-    parser.add_argument("--pages", help="Page range in start:end format.")
+    parser.add_argument("--pages", help="Inclusive page range in start:end format.")
+    add_processor_confirmation_args(parser, "extract tables with Processor")
     args = parser.parse_args(fix_negative_args())
 
     pages = parse_page_range(args.pages) if args.pages else None
 
-    client = create_client()
+    client = create_client(args)
     result = await client.extract_table(args.input, pages)
     write_json_output(result, args.out)
 

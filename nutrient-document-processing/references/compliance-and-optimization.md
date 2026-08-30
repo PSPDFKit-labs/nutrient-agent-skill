@@ -1,128 +1,38 @@
 # Compliance and Optimization
 
-Use these patterns when the required output is archival, accessible, or tuned for delivery performance.
+## Choose Processor output or Accessibility workflow
 
-## PDF/A archival conversion
+- Processor can emit PDF/A and PDF/UA through `/build` and the pinned typed client. These are output transforms.
+- Nutrient Accessibility is a separate product for current PDF/UA auto-tagging and validation workflows.
+- Do not use the deprecated `/processor/pdfua` endpoint for a new integration.
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document=@document.pdf \
-  -F 'instructions={
-    "parts": [
-      {
-        "file": "document"
-      }
-    ],
-    "output": {
-      "type": "pdfa",
-      "conformance": "pdfa-2a",
-      "vectorization": true,
-      "rasterization": true
-    }
-  }' \
-  -o result.pdf
-```
+## PDF/A with the typed client
 
-Supported PDF/A targets include:
+Prefer `client.convert(input, "pdfa")` for the default or `workflow().output_pdfa(options)` when a specific supported conformance and vectorization/rasterization policy is required. Use only conformance values accepted by `nutrient-dws==3.1.0`; do not copy a broader unverified list into a raw payload.
 
-- `pdfa-1a`, `pdfa-1b`
-- `pdfa-2a`, `pdfa-2u`, `pdfa-2b`
-- `pdfa-3a`, `pdfa-3u`, `pdfa-3b`
-- `pdfa-4`, `pdfa-4e`, `pdfa-4f`
+PDF/A conversion can change live text and fonts. Validate the final artifact with the user's required archival validator before claiming conformance.
 
-### PDF/A caveat
+## PDF/UA Processor output
 
-To achieve conformance, conversion may vectorize or rasterize content. That can remove live text and font information, so later OCR may be needed.
+For a Processor output transform, use `client.convert(input, "pdfua")` or `workflow().output_pdfua(options)`. This maps to `/build` output type `pdfua` through the pinned client.
 
-## PDF/UA auto-tagging
+PDF/UA output is not a substitute for an accessibility validation workflow. Born-digital, well-structured sources generally provide a better starting point than flattened or raster-only content. Route current auto-tagging/validation requirements to the Accessibility product and validate with the user's required checker.
 
-Dedicated endpoint:
+## Optimization
 
-```bash
-curl -X POST https://api.nutrient.io/processor/pdfua \
-  -H "Content-Type: application/pdf" \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  --data-binary @document.pdf \
-  -o result.pdf
-```
+Use `scripts/optimize.py` and provide options via a reviewed JSON file when possible. Current pinned options include settings such as `mrcCompression`, `imageOptimizationQuality`, and `linearize`.
 
-Equivalent `/build` workflow:
+Rules:
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document=@document.pdf \
-  -F 'instructions={
-    "parts": [
-      {
-        "file": "document"
-      }
-    ],
-    "output": {
-      "type": "pdfua"
-    }
-  }' \
-  -o result.pdf
-```
+- visually compare compression-sensitive pages;
+- optimize before signing;
+- use linearization for a final web-delivery PDF, not an intermediate;
+- choose a new output path rather than overwriting the source;
+- obtain a fresh estimate and approval for every separate request.
 
-### PDF/UA rules
-
-- PDF/UA is an accessibility target, not just a format conversion.
-- Clean born-digital PDFs generally tag better than rasterized or flattened inputs.
-- Structured HTML sources also tend to produce better accessibility outcomes than image-only content.
-- Validate final outputs with your required checker when accessibility compliance is contractual.
-
-## PDF optimization and linearization
-
-Linearize a PDF for fast web viewing:
-
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document=@document.pdf \
-  -F 'instructions={
-    "parts": [
-      {
-        "file": "document"
-      }
-    ],
-    "output": {
-      "type": "pdf",
-      "optimize": {
-        "linearize": true
-      }
-    }
-  }' \
-  -o result.pdf
-```
-
-Optimization with compression controls:
-
-```json
-{
-  "parts": [{ "file": "document" }],
-  "output": {
-    "type": "pdf",
-    "optimize": {
-      "disableImages": false,
-      "mrcCompression": true,
-      "imageOptimizationQuality": 2,
-      "linearize": true
-    }
-  }
-}
-```
-
-### Optimization rules
-
-- Linearize only for delivery PDFs meant for network viewing.
-- Optimize before signatures when possible. Treat signed PDFs as immutable delivery artifacts.
-- Compression changes should be validated visually when image quality matters.
-
-## Official docs
+## Official sources
 
 - [PDF to PDF/A API](https://www.nutrient.io/api/pdf-to-pdfa-api/)
 - [PDF/UA auto-tagging API](https://www.nutrient.io/api/pdfua-auto-tagging-api/)
+- [Accessibility API](https://www.nutrient.io/api/accessibility-api/)
 - [Optimization API](https://www.nutrient.io/api/document-optimization-api/)
-- [PDF linearization API](https://www.nutrient.io/api/pdf-linearization-api/)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["nutrient-dws"]
+# dependencies = ["nutrient-dws==3.1.0"]
 # ///
 
 import argparse
@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from lib.common import create_client, write_binary_output, handle_error
+from lib.common import add_processor_confirmation_args
 
 
 async def main() -> None:
@@ -21,13 +22,14 @@ async def main() -> None:
         help="Comma-separated list of input file paths or URLs (at least 2).",
     )
     parser.add_argument("--out", required=True, help="Output file path.")
+    add_processor_confirmation_args(parser, "merge documents")
     args = parser.parse_args()
 
     inputs = [f.strip() for f in args.inputs.split(",") if f.strip()]
     if len(inputs) < 2:
         parser.error("--inputs must contain at least 2 files.")
 
-    client = create_client()
+    client = create_client(args)
     result = await client.merge(inputs)
     write_binary_output(result, args.out)
 

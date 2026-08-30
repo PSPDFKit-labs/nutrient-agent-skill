@@ -1,118 +1,65 @@
 # Request Basics
 
-Most Nutrient DWS workflows use:
+## Pick the product first
 
-```text
-POST https://api.nutrient.io/build
-Authorization: Bearer YOUR_API_KEY
+- **DWS Processor** (`POST https://api.nutrient.io/build` and typed Processor methods) handles conversion, generation, page operations, OCR, JSON-content extraction, redaction, signing, and output transforms. This package's scripts use `NUTRIENT_API_KEY`.
+- **Data Extraction** (`/extraction/parse`) parses documents to markdown or spatial JSON. It is a separate product with separate credentials and credits.
+- **Accessibility** provides current PDF/UA auto-tagging and validation workflows. The legacy Processor `/processor/pdfua` endpoint is deprecated for new integrations.
+
+Do not move payloads, keys, or credit estimates between these products.
+
+## Processor transport
+
+Use the pinned typed client rather than constructing authenticated shell commands. The builder automatically registers a local path as a multipart upload and represents an HTTPS URL as a server-side remote input:
+
+```python
+local_result = await client.convert("document.docx", "pdf")
+remote_result = await client.convert("https://example.invalid/document.docx", "pdf")
 ```
 
-Use multipart when you are uploading local files. Use JSON when every input is a remote URL.
+Create `client` only through `scripts/lib/common.py::create_client(args)` after the per-run confirmation gate. That helper reads the credential from the protected runtime environment without displaying it. Remote URL inputs cause Nutrient to fetch the URL; confirm that transfer just as you would confirm a local upload.
 
-## Multipart pattern
+## Typed Python outputs in `nutrient-dws==3.1.0`
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -F document=@document.pdf \
-  -F 'instructions={"parts":[{"file":"document"}]}' \
-  -o result.pdf
-```
+The pinned client returns three shapes:
 
-## JSON pattern for remote URLs
+| Result | Key | Typical targets |
+| --- | --- | --- |
+| `BufferOutput` | `buffer: bytes` | PDF, PDF/A, PDF/UA, Office, image |
+| `ContentOutput` | `content: str` | HTML, markdown |
+| `JsonContentOutput` | `data` | `json-content` extraction |
 
-```bash
-curl -X POST https://api.nutrient.io/build \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY" \
-  -d '{
-    "parts": [
-      {
-        "file": {
-          "url": "https://www.nutrient.io/api/assets/downloads/samples/docx/document.docx"
-        }
-      }
-    ]
-  }' \
-  -o result.pdf
-```
+Use `scripts/lib/common.py::write_typed_output`; never assume every conversion has a `buffer`.
 
-## Instructions model
+## Inclusive page ranges
 
-```json
-{
-  "parts": [
-    {
-      "file": "document.pdf",
-      "pages": { "start": 0, "end": -1 },
-      "password": "optional-password"
-    }
-  ],
-  "actions": [
-    { "type": "action_type" }
-  ],
-  "output": {
-    "type": "pdf"
-  }
-}
-```
+Processor page indexes are zero-based and `start` and `end` are inclusive. `{ "start": 0, "end": 4 }` selects five pages. `-1` addresses the last page.
 
-## Core rules
+## Action-time approval
 
-- Multipart field names must match the filenames or symbolic names referenced in `parts`.
-- `parts` preserves order. Multiple parts become a merged output unless the selected output type says otherwise.
-- `actions` execute in order and mutate the in-flight document.
-- `output.type` selects the final artifact type such as `pdf`, `text`, `docx`, `xlsx`, `pptx`, `png`, `pdfa`, or `pdfua`.
-- Password-protected inputs need `password` on the relevant part.
+A Processor request transfers the named inputs to Nutrient and consumes credits. Immediately before every request, present:
 
-## Credits
+1. product and exact operation;
+2. every file or URL transferred;
+3. current estimated credits;
+4. output path and whether the step is irreversible.
 
-Check balance:
+Wait for approval, then pass `--estimated-credits NUMBER --confirm-external-processing`. A retry or next stage needs fresh approval. Obtain estimates from the account dashboard or current official pricing; this package intentionally does not guess via undocumented credit endpoints.
 
-```bash
-curl -X GET https://api.nutrient.io/credits \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY"
-```
+## Common failures
 
-Check usage:
+| Symptom | Check |
+| --- | --- |
+| `400` or validation error | Payload keys and nesting against current official docs or the pinned typed helper |
+| `401` | `NUTRIENT_API_KEY` is present in the protected runtime environment; verify presence only and never print its value |
+| `402` | Current product-specific credit balance and estimate |
+| `413` | Current documented request limit and input size |
+| empty text | Whether the source needs OCR before JSON-content extraction |
+| output already exists | Choose a new path; helpers intentionally refuse overwrite |
 
-```bash
-curl -X GET "https://api.nutrient.io/credits/usage?period=month" \
-  -H "Authorization: Bearer $NUTRIENT_API_KEY"
-```
+## Official sources
 
-## Limits and common errors
-
-### HTTP status codes
-
-| Code | Meaning |
-|------|---------|
-| `200` | Success |
-| `400` | Invalid instructions or missing required fields |
-| `401` | Invalid or missing API key |
-| `402` | Insufficient credits |
-| `413` | Payload too large |
-| `415` | Unsupported media type |
-| `422` | Valid request but unsupported or unprocessable content |
-| `429` | Rate limited |
-| `500` | Server error |
-
-### Common problems
-
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| `file_not_found` | The symbolic file name in `parts` does not match an uploaded field | Align multipart names and `parts` references |
-| Empty extraction | The file is scanned or rasterized | OCR first |
-| `password_required` | The PDF is encrypted | Add the password on the part |
-| `insufficient_credits` | Batch or AI-heavy workflow exceeded credits | Check balance before the run |
-
-### File limits
-
-- Maximum input file: 100 MB
-- Maximum total upload: 500 MB per request
-- For faster runs, prefer files below 50 MB when possible
-
-## Official docs
-
-- [API overview](https://www.nutrient.io/api/documentation/developer-guides/api-overview/)
 - [Processor API overview](https://www.nutrient.io/api/processor-api/)
+- [Processor documentation](https://www.nutrient.io/api/documentation/)
+- [Data Extraction API](https://www.nutrient.io/api/data-extraction-api/)
+- [Accessibility API](https://www.nutrient.io/api/accessibility-api/)
