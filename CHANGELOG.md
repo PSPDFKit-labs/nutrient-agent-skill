@@ -16,4 +16,5 @@
 ### Release
 
 - Add offline contract tests, Agent Skill quick validation, an exact package-ignore profile, pinned-packager regression coverage, an exact provenance manifest, and a manual ClawHub workflow that defaults to validation and requires explicit commit, branch, confirmation, release-enablement variable, externally configured environment reviewers, and temporary owner-only JSON credential gates before publication.
+- Install pinned ClawHub 0.23.3 in pull-request validation before the config-reader and packager regression suites.
 - Keep publication, migration, rename, merge, hide, delete, and transfer actions unexecuted pending final human approval.

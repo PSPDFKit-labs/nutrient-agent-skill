@@ -16,6 +16,7 @@ import release_manifest
 EXACT_SHA = "a" * 40
 EXACT_REF = "refs/heads/main"
 WORKFLOW_PATH = release_manifest.REPO_ROOT / ".github" / "workflows" / "clawhub-release.yml"
+VALIDATE_WORKFLOW_PATH = release_manifest.REPO_ROOT / ".github" / "workflows" / "validate.yml"
 
 
 def mutate_actual_publish(workflow: str, old: str, new: str) -> str:
@@ -53,6 +54,17 @@ def find_clawhub_skills_reader() -> Path:
 
 
 class ReleaseManifestTests(unittest.TestCase):
+    def test_ci_installs_pinned_clawhub_before_release_tests(self) -> None:
+        workflow = VALIDATE_WORKFLOW_PATH.read_text(encoding="utf-8")
+        setup_node = workflow.index("uses: actions/setup-node@v4")
+        pinned_install = workflow.index("npm install --global clawhub@0.23.3")
+        release_tests = workflow.index(
+            "python -m unittest discover -s tools -p 'test_*.py' -v"
+        )
+        self.assertLess(setup_node, pinned_install)
+        self.assertLess(pinned_install, release_tests)
+        self.assertIn('node-version: "22"', workflow)
+
     def test_manifest_catalog_and_prohibited_values_are_immutable(self) -> None:
         attacks: list[dict[str, object]] = []
         for field, value in (
